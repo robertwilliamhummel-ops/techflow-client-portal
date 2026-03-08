@@ -1,0 +1,104 @@
+.invoice-row {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  transition: border-color 0.3s, transform 0.2s;
+}
+
+.invoice-row:hover {
+  border-color: rgba(102, 126, 234, 0.4);
+  transform: translateY(-2px);
+}
+
+.invoice-row-main {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1.5fr 1fr 1.5fr;
+  align-items: center;
+  gap: 1rem;
+}
+
+.invoice-number {
+  font-weight: 600;
+  color: var(--primary);
+  font-size: 0.95rem;
+}
+
+.invoice-date {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.invoice-amount {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-white);
+}
+
+.invoice-status {
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.status-paid {
+  background: rgba(39, 174, 96, 0.2);
+  color: #2ecc71;
+  border: 1px solid rgba(39, 174, 96, 0.3);
+}
+
+.status-unpaid {
+  background: rgba(231, 76, 60, 0.2);
+  color: #ff6b6b;
+  border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.status-cancelled {
+  background: rgba(127, 140, 141, 0.2);
+  color: #95a5a6;
+  border: 1px solid rgba(127, 140, 141, 0.3);
+}
+
+.download-btn {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  white-space: nowrap;
+}
+
+.download-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.download-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.invoice-row-error {
+  margin-top: 0.75rem;
+  color: #ff6b6b;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .invoice-row-main {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .download-btn {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}

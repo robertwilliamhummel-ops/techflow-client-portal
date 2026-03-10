@@ -1,16 +1,32 @@
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './config/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from './config/firebase';
 import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
+import AdminDashboard from './components/AdminDashboard';
 
 function App() {
   const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        // Check if UID exists in admins collection
+        try {
+          const adminDoc = await getDoc(doc(db, 'admins', currentUser.uid));
+          setIsAdmin(adminDoc.exists());
+        } catch (err) {
+          console.error('Admin check failed:', err);
+          setIsAdmin(false);
+        }
+        setUser(currentUser);
+      } else {
+        setUser(null);
+        setIsAdmin(false);
+      }
       setLoading(false);
     });
     return () => unsubscribe();
@@ -33,7 +49,9 @@ function App() {
     );
   }
 
-  return user ? <Dashboard user={user} /> : <LoginPage />;
+  if (!user) return <LoginPage />;
+  if (isAdmin) return <AdminDashboard user={user} />;
+  return <Dashboard user={user} />;
 }
 
 export default App;

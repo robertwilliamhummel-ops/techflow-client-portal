@@ -40,7 +40,6 @@ const ServiceCalculator = forwardRef(function ServiceCalculator(_, ref) {
   const [hourlyServices, setHourlyServices] = useState([newHourly()]);
   const [lineItems, setLineItems] = useState([]);
 
-  // Raw totals (no HST — HST is controlled by InvoiceForm)
   const hourlyTotal = roundToTwo(hourlyServices.reduce((s, r) => s + roundToTwo((parseFloat(r.hours) || 0) * (parseFloat(r.rate) || 0)), 0));
   const lineItemsTotal = roundToTwo(lineItems.reduce((s, i) => s + roundToTwo((parseFloat(i.quantity) || 0) * (parseFloat(i.price) || 0)), 0));
   const subtotal = roundToTwo(hourlyTotal + lineItemsTotal);
@@ -58,13 +57,10 @@ const ServiceCalculator = forwardRef(function ServiceCalculator(_, ref) {
   };
 
   useImperativeHandle(ref, () => ({
-    // Called by TotalsBox polling — returns live totals with/without HST
     getTotals: (chargeHST) => {
       const taxAmount = chargeHST ? roundToTwo(subtotal * 0.13) : 0;
       return { hourlyTotal, lineItemsTotal, subtotal, taxAmount, finalTotal: roundToTwo(subtotal + taxAmount) };
     },
-
-    // Called on Preview/Send — returns clean data ready for Firestore + Firebase functions
     getData: (chargeHST) => {
       const hourly = hourlyServices
         .filter(s => s.serviceType && parseFloat(s.hours) > 0)
@@ -74,15 +70,12 @@ const ServiceCalculator = forwardRef(function ServiceCalculator(_, ref) {
           if (s.notes.trim()) description += ` - ${s.notes.trim()}`;
           return { serviceType: label, description, hours: parseFloat(s.hours), rate: parseFloat(s.rate) || 0, total: roundToTwo(parseFloat(s.hours) * (parseFloat(s.rate) || 0)) };
         });
-
       const items = lineItems
         .filter(i => i.description.trim() && parseFloat(i.quantity) > 0 && parseFloat(i.price) > 0)
         .map(i => ({ description: i.description.trim(), quantity: parseFloat(i.quantity), price: parseFloat(i.price), total: roundToTwo(parseFloat(i.quantity) * parseFloat(i.price)) }));
-
       const taxAmount = chargeHST ? roundToTwo(subtotal * 0.13) : 0;
       return { hourlyServices: hourly, lineItems: items, totals: { subtotal, taxAmount, finalTotal: roundToTwo(subtotal + taxAmount), taxRate: chargeHST ? 0.13 : 0 } };
     },
-
     validate: () => {
       const errors = [];
       const hasHourly = hourlyServices.some(s => s.serviceType && parseFloat(s.hours) > 0);
@@ -96,7 +89,6 @@ const ServiceCalculator = forwardRef(function ServiceCalculator(_, ref) {
       });
       return errors;
     },
-
     reset: () => { setHourlyServices([newHourly()]); setLineItems([]); },
   }));
 
@@ -108,54 +100,63 @@ const ServiceCalculator = forwardRef(function ServiceCalculator(_, ref) {
       <div className="services-sublabel"><i className="fas fa-clock"></i> Hourly Services</div>
 
       {hourlyServices.map((s) => (
-        <div className="service-row" key={s.id}>
-          <div className="form-group">
-            <label className="form-label">Service Type</label>
-            <select className="form-select" value={s.serviceType} onChange={e => updateHourly(s.id, 'serviceType', e.target.value)}>
-              <option value="">Select type</option>
-              {SERVICE_TYPES.map(t => <option key={t.value} value={t.value}>{t.label} — ${t.rate}/hr</option>)}
-            </select>
+        // Each service is a self-contained block with its OWN notes field
+        <div className="hourly-service-block" key={s.id}>
+
+          <div className="service-row">
+            <div className="form-group">
+              <label className="form-label">Service Type</label>
+              <select className="form-select" value={s.serviceType} onChange={e => updateHourly(s.id, 'serviceType', e.target.value)}>
+                <option value="">Select type</option>
+                {SERVICE_TYPES.map(t => <option key={t.value} value={t.value}>{t.label} — ${t.rate}/hr</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Description</label>
+              <select className="form-select" value={s.description} onChange={e => updateHourly(s.id, 'description', e.target.value)}>
+                <option value="">Select description</option>
+                {Object.entries(DESCRIPTION_OPTIONS).map(([group, opts]) => (
+                  <optgroup key={group} label={group}>
+                    {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Hours</label>
+              <input type="number" className="form-input" min="0" step="0.25" placeholder="0.00" value={s.hours} onChange={e => updateHourly(s.id, 'hours', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Rate/hr</label>
+              <input type="number" className="form-input" min="0" step="1" placeholder="Auto" value={s.rate} onChange={e => updateHourly(s.id, 'rate', e.target.value)} />
+            </div>
+            <div className="form-group remove-col">
+              <label className="form-label">&nbsp;</label>
+              <button className="btn-remove" onClick={() => setHourlyServices(p => p.filter(r => r.id !== s.id))} type="button">
+                <i className="fas fa-trash"></i>
+              </button>
+            </div>
           </div>
-          <div className="form-group">
-            <label className="form-label">Description</label>
-            <select className="form-select" value={s.description} onChange={e => updateHourly(s.id, 'description', e.target.value)}>
-              <option value="">Select description</option>
-              {Object.entries(DESCRIPTION_OPTIONS).map(([group, opts]) => (
-                <optgroup key={group} label={group}>
-                  {opts.map(o => <option key={o} value={o}>{o}</option>)}
-                </optgroup>
-              ))}
-            </select>
+
+          {/* Notes field — inside THIS block, belongs to THIS service */}
+          <div className="notes-row">
+            <div className="form-group">
+              <label className="form-label">Additional Details <span className="optional">(optional — appended to description on PDF)</span></label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. migrated 50GB data, configured 5 security groups"
+                value={s.notes}
+                onChange={e => updateHourly(s.id, 'notes', e.target.value)}
+              />
+            </div>
           </div>
-          <div className="form-group">
-            <label className="form-label">Hours</label>
-            <input type="number" className="form-input" min="0" step="0.25" placeholder="0.00" value={s.hours} onChange={e => updateHourly(s.id, 'hours', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Rate/hr</label>
-            <input type="number" className="form-input" min="0" step="1" placeholder="Auto" value={s.rate} onChange={e => updateHourly(s.id, 'rate', e.target.value)} />
-          </div>
-          <div className="form-group remove-col">
-            <label className="form-label">&nbsp;</label>
-            <button className="btn-remove" onClick={() => setHourlyServices(p => p.filter(r => r.id !== s.id))} type="button">
-              <i className="fas fa-trash"></i>
-            </button>
-          </div>
+
         </div>
       ))}
 
-      {/* Optional notes — shown under each row but compact */}
-      {hourlyServices.map((s) => s.serviceType ? (
-        <div className="notes-row" key={s.id + '-notes'}>
-          <div className="form-group" style={{ flex: 1 }}>
-            <label className="form-label">Additional Details <span className="optional">(optional)</span></label>
-            <input type="text" className="form-input" placeholder="e.g. migrated 50GB data, configured 5 security groups" value={s.notes} onChange={e => updateHourly(s.id, 'notes', e.target.value)} />
-          </div>
-        </div>
-      ) : null)}
-
       {/* LINE ITEMS */}
-      <div className="services-sublabel" style={{ marginTop: '16px' }}><i className="fas fa-list"></i> Line Items</div>
+      <div className="services-sublabel" style={{ marginTop: '28px' }}><i className="fas fa-list"></i> Line Items</div>
 
       {lineItems.map((item) => (
         <div className="lineitem-row" key={item.id}>
@@ -180,7 +181,6 @@ const ServiceCalculator = forwardRef(function ServiceCalculator(_, ref) {
         </div>
       ))}
 
-      {/* ADD BUTTONS */}
       <div className="add-btns">
         <button className="btn-add-service" onClick={() => setHourlyServices(p => [...p, newHourly()])} type="button">
           <i className="fas fa-plus"></i> Add Hourly Service

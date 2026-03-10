@@ -2,19 +2,18 @@
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 12px;
-  padding: 24px;
+  padding: 28px 28px 24px;
 }
 
 .card-title {
   font-size: 13px;
   font-weight: 600;
   color: rgba(255,255,255,0.8);
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
 .card-title i { color: #667eea; }
 
 .services-sublabel {
@@ -22,51 +21,53 @@
   color: rgba(255,255,255,0.35);
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-/* HOURLY SERVICE ROW — matches mockup grid: 2fr 2fr 0.7fr 0.7fr auto */
+/* Each hourly service is a self-contained block */
+.hourly-service-block {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  padding: 18px 18px 14px;
+  margin-bottom: 14px;
+}
+
+/* Top row: type, description, hours, rate, remove */
 .service-row {
   display: grid;
   grid-template-columns: 2fr 2fr 0.7fr 0.7fr 36px;
-  gap: 10px;
+  gap: 12px;
   align-items: end;
-  margin-bottom: 8px;
-  padding: 14px;
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 8px;
+  margin-bottom: 14px;
 }
 
-/* NOTES ROW — full width under each service */
+/* Notes row — full width inside the block */
 .notes-row {
-  display: flex;
-  padding: 0 14px 12px;
-  margin-top: -6px;
+  width: 100%;
 }
+.notes-row .form-group { margin: 0; }
 
 /* LINE ITEM ROW */
 .lineitem-row {
   display: grid;
   grid-template-columns: 2fr 0.6fr 0.8fr 36px;
-  gap: 10px;
+  gap: 12px;
   align-items: end;
-  margin-bottom: 8px;
-  padding: 14px;
+  margin-bottom: 12px;
+  padding: 18px 18px 14px;
   background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
 }
-
-.desc-col { grid-column: 1; }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   margin: 0;
 }
 
@@ -88,6 +89,7 @@
   text-transform: none;
   font-size: 10px;
   letter-spacing: 0;
+  color: rgba(255,255,255,0.2);
 }
 
 .form-input {
@@ -95,14 +97,13 @@
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 7px;
   color: #fff;
-  padding: 8px 12px;
-  font-size: 12px;
+  padding: 9px 12px;
+  font-size: 13px;
   font-family: inherit;
   outline: none;
   width: 100%;
   transition: border-color 0.2s;
 }
-
 .form-input:focus { border-color: rgba(102,126,234,0.5); }
 .form-input::placeholder { color: rgba(255,255,255,0.2); }
 
@@ -111,17 +112,15 @@
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 7px;
   color: rgba(255,255,255,0.7);
-  padding: 8px 12px;
-  font-size: 12px;
+  padding: 9px 12px;
+  font-size: 13px;
   font-family: inherit;
   outline: none;
   width: 100%;
   cursor: pointer;
   transition: border-color 0.2s;
 }
-
 .form-select:focus { border-color: rgba(102,126,234,0.5); }
-
 .form-select option,
 .form-select optgroup { background: #1a1a2e; color: #fff; }
 
@@ -129,8 +128,8 @@
   background: rgba(241,70,104,0.1);
   border: 1px solid rgba(241,70,104,0.2);
   color: #f14668;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 11px;
@@ -140,47 +139,43 @@
   transition: background 0.2s;
   flex-shrink: 0;
 }
-
-.btn-remove:hover { background: rgba(241,70,104,0.2); }
+.btn-remove:hover { background: rgba(241,70,104,0.22); }
 
 /* ADD BUTTONS */
 .add-btns {
   display: flex;
   gap: 10px;
-  margin-top: 14px;
+  margin-top: 18px;
 }
 
 .btn-add-service,
 .btn-add-line {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 12px;
+  padding: 9px 18px;
+  border-radius: 7px;
+  font-size: 13px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   font-family: inherit;
   transition: all 0.2s;
 }
 
 .btn-add-service {
   background: rgba(102,126,234,0.1);
-  border: 1px dashed rgba(102,126,234,0.3);
+  border: 1px dashed rgba(102,126,234,0.35);
   color: #667eea;
 }
-
 .btn-add-service:hover { background: rgba(102,126,234,0.18); }
 
 .btn-add-line {
   background: rgba(255,255,255,0.04);
-  border: 1px dashed rgba(255,255,255,0.1);
+  border: 1px dashed rgba(255,255,255,0.12);
   color: rgba(255,255,255,0.4);
 }
-
 .btn-add-line:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .service-row { grid-template-columns: 1fr 1fr; }
-  .service-row .remove-col { grid-column: 2; justify-self: end; }
   .lineitem-row { grid-template-columns: 1fr 1fr; }
 }

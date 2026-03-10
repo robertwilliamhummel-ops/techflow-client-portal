@@ -2,39 +2,36 @@
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 12px;
-  padding: 24px;
+  padding: 28px;
 }
 
 .card-title {
   font-size: 13px;
   font-weight: 600;
   color: rgba(255,255,255,0.8);
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
 .card-title i { color: #667eea; }
 
 .cs-toast {
-  padding: 8px 12px;
+  padding: 9px 14px;
   border-radius: 6px;
   font-size: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
-
 .cs-toast-success { background: rgba(72,199,142,0.1); border: 1px solid rgba(72,199,142,0.2); color: #48c78e; }
 .cs-toast-error   { background: rgba(241,70,104,0.1); border: 1px solid rgba(241,70,104,0.2); color: #f14668; }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 10px;
+  gap: 6px;
+  margin-bottom: 14px;
 }
-
-.form-group:last-child { margin-bottom: 0; }
+.form-group:last-of-type { margin-bottom: 0; }
 
 .form-label {
   font-size: 11px;
@@ -48,14 +45,13 @@
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 7px;
   color: #fff;
-  padding: 8px 12px;
-  font-size: 12px;
+  padding: 9px 12px;
+  font-size: 13px;
   font-family: inherit;
   outline: none;
   width: 100%;
   transition: border-color 0.2s;
 }
-
 .form-input:focus { border-color: rgba(102,126,234,0.5); }
 .form-input::placeholder { color: rgba(255,255,255,0.2); }
 
@@ -65,28 +61,26 @@
   border-radius: 7px;
   color: rgba(255,255,255,0.7);
   padding: 9px 12px;
-  font-size: 12px;
+  font-size: 13px;
   font-family: inherit;
   outline: none;
   width: 100%;
   cursor: pointer;
   transition: border-color 0.2s;
 }
-
 .form-select:focus { border-color: rgba(102,126,234,0.5); }
 .form-select option { background: #1a1a2e; color: #fff; }
 
 .cs-two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 14px;
 }
 
-/* CUSTOMER ACTION BUTTONS */
 .customer-btns {
   display: flex;
-  gap: 8px;
-  margin-top: 14px;
+  gap: 10px;
+  margin-top: 18px;
   align-items: center;
 }
 
@@ -95,53 +89,51 @@
   background: rgba(102,126,234,0.15);
   border: 1px solid rgba(102,126,234,0.3);
   color: #667eea;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 12px;
+  padding: 10px 14px;
+  border-radius: 7px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 7px;
   font-family: inherit;
   transition: background 0.2s;
 }
-
 .btn-save-customer:hover:not(:disabled) { background: rgba(102,126,234,0.25); }
 
 .btn-new-customer {
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);
   color: rgba(255,255,255,0.4);
-  padding: 8px 14px;
-  border-radius: 6px;
-  font-size: 12px;
+  padding: 10px 16px;
+  border-radius: 7px;
+  font-size: 13px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   font-family: inherit;
   transition: all 0.2s;
 }
-
 .btn-new-customer:hover { background: rgba(255,255,255,0.09); }
 
 .btn-delete-customer {
   background: rgba(241,70,104,0.08);
   border: 1px solid rgba(241,70,104,0.2);
   color: rgba(241,70,104,0.7);
-  width: 34px;
-  height: 34px;
-  border-radius: 6px;
+  width: 38px;
+  height: 38px;
+  border-radius: 7px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 13px;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
-
 .btn-delete-customer:hover:not(:disabled) { background: rgba(241,70,104,0.18); color: #f14668; }
 
 .btn-save-customer:disabled,

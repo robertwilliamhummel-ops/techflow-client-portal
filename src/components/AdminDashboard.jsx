@@ -3,6 +3,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import clientConfig from '../config/client';
 import InvoiceList from './InvoiceList';
+import InvoiceForm from './InvoiceForm';
 import './AdminDashboard.css';
 
 function AdminDashboard({ user }) {
@@ -63,14 +64,7 @@ function AdminDashboard({ user }) {
         )}
 
         {activeTab === 'create' && (
-          <div className="coming-soon">
-            <i className="fas fa-tools"></i>
-            <h2>Invoice Form</h2>
-            <p>Coming in Session 2 — Invoice form, customer management, and calculator</p>
-            <button className="btn-back" onClick={() => setActiveTab('invoices')}>
-              <i className="fas fa-arrow-left"></i> Back to Invoices
-            </button>
-          </div>
+          <InvoiceForm user={user} />
         )}
       </main>
 

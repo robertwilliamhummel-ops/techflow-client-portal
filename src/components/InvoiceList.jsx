@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import './InvoiceList.css';
@@ -9,6 +9,8 @@ function InvoiceList({ user, onCreateNew }) {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [yearFilter, setYearFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('date-desc');
   const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => {
@@ -19,7 +21,6 @@ function InvoiceList({ user, onCreateNew }) {
     setLoading(true);
     setError('');
     try {
-      // Admin sees ALL invoices belonging to them
       const q = query(
         collection(db, 'invoices'),
         where('userId', '==', user.uid)
@@ -30,7 +31,7 @@ function InvoiceList({ user, onCreateNew }) {
         list.push({ id: doc.id, ...doc.data() });
       });
 
-      // Sort newest first
+      // Default sort newest first
       list.sort((a, b) => {
         const dateA = a.createdAt?.toDate?.() || new Date(a.date);
         const dateB = b.createdAt?.toDate?.() || new Date(b.date);
@@ -50,7 +51,6 @@ function InvoiceList({ user, onCreateNew }) {
     setUpdatingId(invoiceId);
     try {
       await updateDoc(doc(db, 'invoices', invoiceId), { status: newStatus });
-      // Update local state immediately — no need to refetch
       setInvoices(prev =>
         prev.map(inv => inv.id === invoiceId ? { ...inv, status: newStatus } : inv)
       );
@@ -75,21 +75,51 @@ function InvoiceList({ user, onCreateNew }) {
     }).format(amount || 0);
   };
 
+  // Derive available years from data
+  const availableYears = useMemo(() => {
+    const years = new Set(invoices.map(inv => inv.date?.slice(0, 4)).filter(Boolean));
+    return Array.from(years).sort((a, b) => b - a);
+  }, [invoices]);
+
+  // Filter + search + sort
+  const filtered = useMemo(() => {
+    let list = invoices.filter(inv => {
+      const matchesFilter = filter === 'all' || inv.status === filter;
+      const matchesYear = yearFilter === 'all' || inv.date?.startsWith(yearFilter);
+      const matchesSearch = search === '' ||
+        inv.number?.toLowerCase().includes(search.toLowerCase()) ||
+        inv.customer?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        inv.customer?.company?.toLowerCase().includes(search.toLowerCase());
+      return matchesFilter && matchesYear && matchesSearch;
+    });
+
+    list = [...list].sort((a, b) => {
+      switch (sortBy) {
+        case 'date-asc':
+          return new Date(a.date) - new Date(b.date);
+        case 'date-desc':
+          return new Date(b.date) - new Date(a.date);
+        case 'amount-desc':
+          return (b.totals?.finalTotal || 0) - (a.totals?.finalTotal || 0);
+        case 'amount-asc':
+          return (a.totals?.finalTotal || 0) - (b.totals?.finalTotal || 0);
+        case 'customer':
+          return (a.customer?.name || '').localeCompare(b.customer?.name || '');
+        case 'status':
+          return (a.status || '').localeCompare(b.status || '');
+        default:
+          return 0;
+      }
+    });
+
+    return list;
+  }, [invoices, filter, search, yearFilter, sortBy]);
+
   // Stats
   const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + (i.totals?.finalTotal || 0), 0);
   const outstanding = invoices.filter(i => i.status === 'unpaid').reduce((s, i) => s + (i.totals?.finalTotal || 0), 0);
   const paidCount = invoices.filter(i => i.status === 'paid').length;
   const unpaidCount = invoices.filter(i => i.status === 'unpaid').length;
-
-  // Filter + search
-  const filtered = invoices.filter(inv => {
-    const matchesFilter = filter === 'all' || inv.status === filter;
-    const matchesSearch = search === '' ||
-      inv.number?.toLowerCase().includes(search.toLowerCase()) ||
-      inv.customer?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      inv.customer?.company?.toLowerCase().includes(search.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
 
   const getStatusClass = (status) => {
     if (status === 'paid') return 'badge-paid';
@@ -137,7 +167,7 @@ function InvoiceList({ user, onCreateNew }) {
         </div>
       )}
 
-      {/* Filters + Search */}
+      {/* Filters + Sort + Search */}
       <div className="list-controls">
         <div className="filter-buttons">
           {['all', 'unpaid', 'paid', 'cancelled'].map(f => (
@@ -150,14 +180,38 @@ function InvoiceList({ user, onCreateNew }) {
             </button>
           ))}
         </div>
-        <div className="search-wrap">
-          <i className="fas fa-search search-icon"></i>
-          <input
-            className="search-input"
-            placeholder="Search customer or invoice #..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="controls-right">
+          <select
+            className="sort-select"
+            value={yearFilter}
+            onChange={e => setYearFilter(e.target.value)}
+          >
+            <option value="all">All Years</option>
+            {availableYears.map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+          <select
+            className="sort-select"
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value)}
+          >
+            <option value="date-desc">Date: Newest First</option>
+            <option value="date-asc">Date: Oldest First</option>
+            <option value="amount-desc">Amount: High to Low</option>
+            <option value="amount-asc">Amount: Low to High</option>
+            <option value="customer">Customer: A–Z</option>
+            <option value="status">Status: A–Z</option>
+          </select>
+          <div className="search-wrap">
+            <i className="fas fa-search search-icon"></i>
+            <input
+              className="search-input"
+              placeholder="Search customer or invoice #..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 
@@ -210,7 +264,6 @@ function InvoiceList({ user, onCreateNew }) {
               </span>
             </div>
             <div className="inv-actions">
-              {/* Status update dropdown */}
               <select
                 className="status-select"
                 value={inv.status || 'unpaid'}
@@ -226,7 +279,7 @@ function InvoiceList({ user, onCreateNew }) {
         ))}
       </div>
 
-      {/* Refresh button */}
+      {/* Footer */}
       {!loading && (
         <div className="list-footer">
           <button className="btn-refresh" onClick={fetchInvoices}>

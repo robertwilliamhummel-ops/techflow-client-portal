@@ -1,0 +1,97 @@
+/* QuoteForm.css — inherits all InvoiceForm.css classes, adds quote-specific styles */
+
+.quote-form .quote-notice {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(251, 191, 36, 0.08) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-left: 4px solid #f59e0b;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.quote-form .quote-notice i {
+  color: #f59e0b;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.valid-until-input {
+  border-color: rgba(245, 158, 11, 0.5) !important;
+}
+
+.valid-until-input:focus {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15) !important;
+}
+
+.valid-until-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(245, 158, 11, 0.15);
+  color: #92400e;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.optional-badge {
+  font-size: 0.7rem;
+  font-weight: 500;
+  background: rgba(100, 116, 139, 0.15);
+  color: #64748b;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.quote-notes-card {
+  margin-top: 20px;
+}
+
+.quote-notes-textarea {
+  resize: vertical;
+  min-height: 90px;
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+/* Draft button */
+.btn-draft-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: 2px solid rgba(102, 126, 234, 0.4);
+  background: rgba(102, 126, 234, 0.08);
+  color: var(--primary, #667eea);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-draft-action:hover:not(:disabled) {
+  background: rgba(102, 126, 234, 0.15);
+  border-color: var(--primary, #667eea);
+}
+
+.btn-draft-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Quote-specific totals label */
+.quote-form .totals-final span:first-child::after {
+  content: ' (Est.)';
+  font-size: 0.75rem;
+  font-weight: 400;
+  opacity: 0.7;
+}

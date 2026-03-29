@@ -288,7 +288,7 @@ function QuoteForm({ user, onQuoteSent }) {
 
           <div className="form-group">
             <label className="form-label">
-              <i className="fas fa-calendar-times" style={{ marginRight: '6px', color: '#f59e0b' }}></i>
+              <i className="fas fa-calendar-times" style={{ marginRight: '6px', color: '#667eea' }}></i>
               Valid Until <span className="valid-until-badge">Required</span>
             </label>
             <input

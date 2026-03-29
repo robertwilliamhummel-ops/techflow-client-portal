@@ -186,7 +186,8 @@ function generatePDFHTML(items, customerName, invoiceNumber, invoiceDate, subtot
 
 /**
  * Generate Quote PDF HTML
- * Separate template for quotes — says QUOTE, shows Valid Until, has disclaimer footer
+ * Matches invoice layout/colors (purple brand gradient). Quote-specific: valid date, estimate label, disclaimer.
+ * Tighter than the old yellow template so repeating PDF headers are less likely to push content to a second page.
  */
 function generateQuotePDFHTML(
   items, customerName, quoteNumber, quoteDate, validUntil, subtotal, tax, total, notes
@@ -204,9 +205,9 @@ function generateQuotePDFHTML(
   }
 
   const notesSection = notes ? `
-    <div style="margin: 20px 0; padding: 14px; background: #fffbeb; border-radius: 6px; border-left: 4px solid #f59e0b;">
-      <h3 style="color: #92400e; margin: 0 0 8px 0; font-size: 14px;">Notes / Terms</h3>
-      <p style="margin: 0; font-size: 13px; color: #78350f; line-height: 1.6;">${notes}</p>
+    <div style="margin: 20px 0; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid ${config.primaryColor};">
+      <h3 style="color: ${config.primaryColor}; margin: 0 0 10px 0; font-size: 16px;">Notes / Terms</h3>
+      <p style="margin: 0; font-size: 13px; color: #2d3748; line-height: 1.5;">${notes}</p>
     </div>
   ` : "";
 
@@ -217,55 +218,30 @@ function generateQuotePDFHTML(
   <meta charset="utf-8">
   <title>Quote ${quoteNumber}</title>
   <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #2d3748; margin: 0; padding: 0; }
-    .quote-container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; }
+    body { font-family: Arial, sans-serif; line-height: 1.5; color: #2d3748; margin: 0; padding: 0; }
+    .quote-container { max-width: 800px; margin: 0 auto; background: white; padding: 24px 30px 30px 30px; }
   </style>
 </head>
 <body>
   <div class="quote-container">
 
-    <!-- QUOTE Header Banner -->
-    <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;
-                padding: 12px 20px; border-radius: 8px; margin-bottom: 24px;
-                display: flex; justify-content: space-between; align-items: center;">
-      <div>
-        <div style="font-size: 28px; font-weight: 900; letter-spacing: 2px;">QUOTE</div>
-        <div style="font-size: 13px; opacity: 0.85;">Estimate — Not an Invoice</div>
-      </div>
-      <div style="text-align: right;">
-        <div style="font-size: 20px; font-weight: 700;">${quoteNumber}</div>
-        <div style="font-size: 13px; opacity: 0.85;">Date: ${quoteDate}</div>
-      </div>
-    </div>
-
-    <!-- Valid Until Notice -->
-    <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px;
-                padding: 12px 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
-      <div style="font-size: 20px;">📅</div>
-      <div>
-        <div style="font-size: 13px; color: #92400e; font-weight: 600; margin-bottom: 2px;">Quote Valid Until</div>
-        <div style="font-size: 18px; font-weight: 700; color: #c2410c;">${validUntil}</div>
-      </div>
-    </div>
-
-    <!-- Bill To / Details -->
-    <div style="display: flex; justify-content: space-between; margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 22px;">
       <div style="flex: 1;">
-        <h3 style="color: #4a5568; margin: 0 0 8px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Prepared For</h3>
-        <strong style="font-size: 16px;">${customerName}</strong>
+        <h3 style="color: #2d3748; margin: 0 0 10px 0; font-size: 16px;">Prepared For:</h3>
+        <strong>${customerName}</strong>
       </div>
       <div style="flex: 1; text-align: right;">
-        <h3 style="color: #4a5568; margin: 0 0 8px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Prepared By</h3>
-        <strong style="font-size: 16px;">${config.companyName}</strong><br>
-        <span style="font-size: 13px; color: #718096;">${config.companyPhone}</span><br>
-        <span style="font-size: 13px; color: #718096;">${config.companyEmail}</span>
+        <h3 style="color: #2d3748; margin: 0 0 10px 0; font-size: 16px;">Quote Details:</h3>
+        <strong>Quote #:</strong> ${quoteNumber}<br>
+        <strong>Date:</strong> ${quoteDate}<br>
+        <strong>Valid Until:</strong> ${validUntil}<br>
+        <span style="font-size: 12px; color: #718096;">Estimate — not an invoice</span>
       </div>
     </div>
 
-    <!-- Line Items -->
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 22px;">
       <thead>
-        <tr style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;">
+        <tr style="background: linear-gradient(135deg, ${config.primaryColor} 0%, #764ba2 100%); color: white;">
           <th style="padding: 12px; text-align: left; font-weight: 600;">Description</th>
           <th style="padding: 12px; text-align: right; font-weight: 600;">Qty/Hours</th>
           <th style="padding: 12px; text-align: right; font-weight: 600;">Rate/Price</th>
@@ -275,31 +251,28 @@ function generateQuotePDFHTML(
       <tbody>${itemsHTML}</tbody>
     </table>
 
-    <!-- Totals -->
-    <table style="width: 100%; max-width: 300px; margin-left: auto; margin-bottom: 24px;">
+    <table style="width: 100%; max-width: 300px; margin-left: auto; margin-bottom: 22px;">
       <tr>
-        <td style="padding: 8px 0; text-align: right; color: #4a5568;">Subtotal:</td>
+        <td style="padding: 8px 0; text-align: right;">Subtotal:</td>
         <td style="padding: 8px 0; text-align: right; padding-left: 20px;">$${subtotal}</td>
       </tr>
       <tr>
-        <td style="padding: 8px 0; text-align: right; color: #4a5568;">${config.taxName}:</td>
+        <td style="padding: 8px 0; text-align: right;">${config.taxName} (${Math.round(config.taxRate * 100)}%):</td>
         <td style="padding: 8px 0; text-align: right; padding-left: 20px;">$${tax}</td>
       </tr>
-      <tr style="border-top: 2px solid #f59e0b;">
-        <td style="padding: 12px 0; text-align: right; font-weight: bold; font-size: 16px; color: #92400e;">Estimated Total:</td>
-        <td style="padding: 12px 0; text-align: right; padding-left: 20px; font-weight: bold; font-size: 20px; color: #d97706;">$${total}</td>
+      <tr style="border-top: 2px solid ${config.primaryColor};">
+        <td style="padding: 12px 0; text-align: right; font-weight: bold; font-size: 18px;">Estimated Total:</td>
+        <td style="padding: 12px 0; text-align: right; padding-left: 20px; font-weight: bold; font-size: 18px; color: ${config.primaryColor};">$${total}</td>
       </tr>
     </table>
 
     ${notesSection}
 
-    <!-- Disclaimer Footer -->
-    <div style="margin-top: 30px; padding: 14px 16px; background: #f1f5f9; border-radius: 6px;
-                border-top: 3px solid #cbd5e1; font-size: 12px; color: #64748b; line-height: 1.6;">
-      <strong style="color: #475569;">Important:</strong> This is a quote, not an invoice. No payment is due until work is
-      completed and a formal invoice is issued. This quote is valid until <strong>${validUntil}</strong>.
-      Final costs may vary if scope of work changes. To accept or discuss this quote, please contact us at
-      ${config.companyPhone} or ${config.companyEmail}.
+    <div style="margin-top: 18px; padding: 12px 14px; background: #f8f9fa; border-radius: 6px;
+                border-left: 4px solid ${config.primaryColor}; font-size: 12px; color: #64748b; line-height: 1.55;">
+      <strong style="color: #2d3748;">Important:</strong> This is a quote, not an invoice. No payment is due until work is
+      completed and a formal invoice is issued. Valid until <strong>${validUntil}</strong>.
+      Final costs may vary if scope changes. Contact ${config.companyPhone} or ${config.companyEmail} to accept or discuss.
     </div>
 
   </div>
@@ -447,9 +420,9 @@ exports.sendQuoteEmail = onCall(
       }
 
       const notesHTML = notes ? `
-        <div style="background: #fffbeb; padding: 16px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-bottom: 24px;">
-          <h3 style="margin: 0 0 8px 0; color: #92400e; font-size: 15px;">Notes / Terms</h3>
-          <p style="margin: 0; color: #78350f; font-size: 14px; line-height: 1.6;">${notes}</p>
+        <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; border-left: 4px solid ${config.primaryColor}; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 8px 0; color: #333; font-size: 15px;">Notes / Terms</h3>
+          <p style="margin: 0; color: #333; font-size: 14px; line-height: 1.6;">${notes}</p>
         </div>
       ` : "";
 
@@ -459,26 +432,22 @@ exports.sendQuoteEmail = onCall(
 <head><meta charset="utf-8"><title>Quote ${quoteNumber}</title></head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
 
-  <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #f59e0b;">
+  <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid ${config.primaryColor};">
     <h1 style="color: ${config.primaryColor}; margin: 0; font-size: 28px;">${config.companyName}</h1>
     <p style="color: #666; margin: 5px 0;">${config.companyTagline}</p>
   </div>
 
-  <div style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 16px 20px;
-              border-radius: 10px; margin-bottom: 24px;">
-    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.85; margin-bottom: 4px;">Quote / Estimate</div>
-    <div style="font-size: 22px; font-weight: 700;">${quoteNumber}</div>
-  </div>
-
-  <div style="background: #f8f9fa; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px;">
-    <p style="margin: 4px 0;"><strong>Prepared for:</strong> ${customerName}</p>
-    <p style="margin: 4px 0;"><strong>Date:</strong> ${quoteDate}</p>
-    <p style="margin: 4px 0;"><strong>Valid Until:</strong> <span style="color: #c2410c; font-weight: 700;">${validUntil}</span></p>
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 24px; border-left: 4px solid ${config.primaryColor};">
+    <h2 style="color: #333; margin: 0 0 12px 0; font-size: 22px;">Quote ${quoteNumber}</h2>
+    <p style="margin: 5px 0;"><strong>Prepared for:</strong> ${customerName}</p>
+    <p style="margin: 5px 0;"><strong>Date:</strong> ${quoteDate}</p>
+    <p style="margin: 5px 0;"><strong>Valid until:</strong> ${validUntil}</p>
+    <p style="margin: 10px 0 0 0; font-size: 13px; color: #666;">Estimate — not an invoice. No payment due until work is completed and an invoice is issued.</p>
   </div>
 
   <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
     <thead>
-      <tr style="background: #f59e0b; color: white;">
+      <tr style="background: ${config.primaryColor}; color: white;">
         <th style="padding: 12px; text-align: left;">Description</th>
         <th style="padding: 12px; text-align: right;">Qty × Rate</th>
         <th style="padding: 12px; text-align: right;">Amount</th>
@@ -489,16 +458,16 @@ exports.sendQuoteEmail = onCall(
 
   <div style="text-align: right; margin-bottom: 24px;">
     <p style="margin: 8px 0; font-size: 15px;"><strong>Subtotal:</strong> $${subtotal}</p>
-    <p style="margin: 8px 0; font-size: 15px;"><strong>${config.taxName}:</strong> $${tax}</p>
-    <p style="margin: 8px 0; font-size: 22px; color: #d97706;"><strong>Estimated Total: $${total}</strong></p>
+    <p style="margin: 8px 0; font-size: 15px;"><strong>${config.taxName} (${Math.round(config.taxRate * 100)}%):</strong> $${tax}</p>
+    <p style="margin: 8px 0; font-size: 22px; color: ${config.primaryColor};"><strong>Estimated total: $${total}</strong></p>
   </div>
 
   ${notesHTML}
 
-  <div style="background: #f1f5f9; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; font-size: 13px; color: #64748b;">
-    <strong style="color: #475569;">Please Note:</strong> This is a quote, not an invoice. No payment is required at this time.
+  <div style="background: #f8f9fa; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; font-size: 13px; color: #64748b; border-left: 4px solid ${config.primaryColor};">
+    <strong style="color: #333;">Please note:</strong> This is a quote, not an invoice. No payment is required at this time.
     Once you approve the work, we will proceed and issue a formal invoice upon completion.
-    To accept or discuss this quote, reply to this email or contact us below.
+    Reply to this email or contact us below to accept or discuss.
   </div>
 
   <div style="text-align: center; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 14px;">

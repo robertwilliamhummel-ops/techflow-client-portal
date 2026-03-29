@@ -19,6 +19,22 @@
 .toast-close { margin-left: auto; background: none; border: none; color: inherit; cursor: pointer; opacity: 0.6; font-size: 13px; }
 .toast-close:hover { opacity: 1; }
 
+/* Mobile: toast at top of document is off-screen when user is scrolled to action buttons.
+   Pin to bottom of viewport (FAB is hidden on create-invoice / create-quote). */
+@media (max-width: 768px) {
+  .inv-toast {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    z-index: 300;
+    margin: 0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
 /* TOP 2-COLUMN GRID */
 .form-top-grid {
   display: grid;

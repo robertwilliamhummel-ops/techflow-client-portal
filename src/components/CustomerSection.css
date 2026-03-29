@@ -138,3 +138,17 @@
 
 .btn-save-customer:disabled,
 .btn-delete-customer:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (max-width: 768px) {
+  .cs-toast {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    z-index: 301;
+    margin: 0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}

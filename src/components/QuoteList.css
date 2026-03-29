@@ -32,6 +32,21 @@
   color: #9b1c1c;
 }
 
+/* Mobile: list views keep FAB bottom-right — lift toast so it clears the FAB */
+@media (max-width: 768px) {
+  .ql-toast {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: max(calc(5.5rem + env(safe-area-inset-bottom, 0px)), 16px);
+    z-index: 300;
+    margin: 0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
 /* ── Status Badges ──────────────────────────────────────── */
 .badge-draft {
   background: rgba(100, 116, 139, 0.15);

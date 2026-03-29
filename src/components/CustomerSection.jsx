@@ -64,7 +64,11 @@ function CustomerSection({ user, onCustomerChange }) {
       <div className="card-title"><i className="fas fa-user"></i> Customer</div>
 
       {toast && (
-        <div className={`cs-toast cs-toast-${toast.type}`}>
+        <div
+          className={`cs-toast cs-toast-${toast.type}`}
+          role={toast.type === 'error' ? 'alert' : 'status'}
+          aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
+        >
           {toast.message}
         </div>
       )}

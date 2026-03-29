@@ -210,7 +210,11 @@ function QuoteList({ user, onCreateNew }) {
     <div className="invoice-list-admin quote-list-admin">
 
       {toast && (
-        <div className={`ql-toast ql-toast-${toast.type}`}>
+        <div
+          className={`ql-toast ql-toast-${toast.type}`}
+          role={toast.type === 'error' ? 'alert' : 'status'}
+          aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
+        >
           <i className={`fas ${toast.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`}></i>
           {toast.message}
           <button onClick={() => setToast(null)}><i className="fas fa-times"></i></button>

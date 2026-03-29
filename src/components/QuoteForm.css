@@ -1,4 +1,5 @@
-/* QuoteForm.css — inherits all InvoiceForm.css classes, adds quote-specific styles */
+/* QuoteForm.css — base form + toast styles shared with invoices */
+@import './InvoiceForm.css';
 
 .quote-form .quote-notice {
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(251, 191, 36, 0.08) 100%);

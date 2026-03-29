@@ -195,7 +195,11 @@ function InvoiceForm({ user }) {
     <div className="invoice-form">
 
       {toast && (
-        <div className={`inv-toast inv-toast-${toast.type}`}>
+        <div
+          className={`inv-toast inv-toast-${toast.type}`}
+          role={toast.type === 'error' ? 'alert' : 'status'}
+          aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
+        >
           <i className={`fas ${
             toast.type === 'success' ? 'fa-check-circle'
             : toast.type === 'info' ? 'fa-info-circle'

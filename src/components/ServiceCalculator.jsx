@@ -358,16 +358,6 @@ const ServiceCalculator = forwardRef(function ServiceCalculator(_, ref) {
                   onChange={(e) => updateHourly(s.id, 'rate', e.target.value)}
                 />
               </div>
-              <div className="form-group remove-col">
-                <label className="form-label">&nbsp;</label>
-                <button
-                  className="btn-remove"
-                  onClick={() => setHourlyServices((p) => p.filter((r) => r.id !== s.id))}
-                  type="button"
-                >
-                  <i className="fas fa-trash"></i>
-                </button>
-              </div>
             </div>
 
             <div className="notes-row">
@@ -384,6 +374,17 @@ const ServiceCalculator = forwardRef(function ServiceCalculator(_, ref) {
                   onChange={(e) => updateHourly(s.id, 'notes', e.target.value)}
                 />
               </div>
+            </div>
+
+            <div className="hourly-service-footer">
+              <button
+                className="btn-remove"
+                onClick={() => setHourlyServices((p) => p.filter((r) => r.id !== s.id))}
+                type="button"
+                aria-label="Remove this hourly service"
+              >
+                <i className="fas fa-trash"></i>
+              </button>
             </div>
           </div>
         );

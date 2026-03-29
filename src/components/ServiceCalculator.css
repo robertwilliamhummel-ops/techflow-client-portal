@@ -36,10 +36,10 @@
   margin-bottom: 14px;
 }
 
-/* Top row: type, description, hours, rate, remove */
+/* Top row: type, description, hours, rate */
 .service-row {
   display: grid;
-  grid-template-columns: 2fr 2fr 0.7fr 0.7fr 36px;
+  grid-template-columns: 2fr 2fr 0.7fr 0.7fr;
   gap: 12px;
   align-items: end;
   margin-bottom: 14px;
@@ -50,6 +50,13 @@
   width: 100%;
 }
 .notes-row .form-group { margin: 0; }
+
+/* Delete — below additional details */
+.hourly-service-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
 
 /* LINE ITEM ROW */
 .lineitem-row {
@@ -71,6 +78,7 @@
   margin: 0;
 }
 
+/* Line item row: align delete with inputs */
 .remove-col {
   display: flex;
   flex-direction: column;

@@ -194,3 +194,24 @@
     display: none;
   }
 }
+/*
+ * QuoteList.css — ADDITIONS ONLY
+ * Append to the END of your existing QuoteList.css file.
+ *
+ * The `.outstanding-banner` base styles already exist in InvoiceList.css
+ * (or your shared stylesheet). This file only adds the neutral modifier
+ * used when there are no pending quotes.
+ */
+
+/* Neutral banner — shown when all quotes are resolved or no quotes exist.
+   Uses a muted colour instead of the amber/warning tone so it doesn't
+   look alarming when everything is in good shape.                        */
+.outstanding-banner--neutral {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary, #a0aec0);
+}
+
+.outstanding-banner--neutral i {
+  color: #48c78e;
+}

@@ -22,31 +22,48 @@ const STATUS_LABELS = {
 function QuoteList({ user, onCreateNew }) {
   const { quotes, loading, error, refreshQuotes, updateQuoteStatus, setQuotes } = useQuotes(user?.uid);
 
-  const [filter, setFilter] = useState('all');
-  const [search, setSearch] = useState('');
+  const [filter, setFilter]         = useState('all');
+  const [search, setSearch]         = useState('');
   const [yearFilter, setYearFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('date-desc');
-  const [updatingId, setUpdatingId] = useState(null);
+  const [sortBy, setSortBy]         = useState('date-desc');
+  const [updatingId, setUpdatingId]     = useState(null);
   const [convertingId, setConvertingId] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
-  const [toast, setToast] = useState(null);
+  const [toast, setToast]           = useState(null);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 5000);
   };
 
-  // Derive years from data
+  // ── Derived stats ─────────────────────────────────────────────────────────
+  const totalQuotes    = quotes.length;
+  const sentCount      = quotes.filter(q => q.status === 'sent').length;
+  const acceptedCount  = quotes.filter(q => q.status === 'accepted').length;
+  const convertedCount = quotes.filter(q => q.status === 'converted').length;
+
+  // "Pending" = draft or sent (not yet accepted, declined, or converted)
+  const pendingQuotes = quotes.filter(
+    q => q.status === 'draft' || q.status === 'sent'
+  );
+  const pendingCount = pendingQuotes.length;
+  const pendingValue = pendingQuotes.reduce(
+    (s, q) => s + (q.totals?.finalTotal || 0), 0
+  );
+
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(amount || 0);
+
+  // ── Filters ───────────────────────────────────────────────────────────────
   const availableYears = useMemo(() => {
     const years = new Set(quotes.map(q => q.date?.slice(0, 4)).filter(Boolean));
     return Array.from(years).sort((a, b) => b - a);
   }, [quotes]);
 
-  // Filter + search + sort
   const filtered = useMemo(() => {
     let list = quotes.filter(q => {
       const matchesFilter = filter === 'all' || q.status === filter;
-      const matchesYear = yearFilter === 'all' || q.date?.startsWith(yearFilter);
+      const matchesYear   = yearFilter === 'all' || q.date?.startsWith(yearFilter);
       const matchesSearch = search === '' ||
         q.quoteNumber?.toLowerCase().includes(search.toLowerCase()) ||
         q.customer?.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -56,45 +73,24 @@ function QuoteList({ user, onCreateNew }) {
 
     list = [...list].sort((a, b) => {
       switch (sortBy) {
-        case 'date-asc':
-          return (new Date(a.date)) - (new Date(b.date));
-        case 'date-desc':
-          return (new Date(b.date)) - (new Date(a.date));
-        case 'amount-desc':
-          return (b.totals?.finalTotal || 0) - (a.totals?.finalTotal || 0);
-        case 'amount-asc':
-          return (a.totals?.finalTotal || 0) - (b.totals?.finalTotal || 0);
-        case 'customer':
-          return (a.customer?.name || '').localeCompare(b.customer?.name || '');
-        case 'status':
-          return (a.status || '').localeCompare(b.status || '');
-        default:
-          return 0;
+        case 'date-asc':    return new Date(a.date) - new Date(b.date);
+        case 'date-desc':   return new Date(b.date) - new Date(a.date);
+        case 'amount-desc': return (b.totals?.finalTotal || 0) - (a.totals?.finalTotal || 0);
+        case 'amount-asc':  return (a.totals?.finalTotal || 0) - (b.totals?.finalTotal || 0);
+        case 'customer':    return (a.customer?.name || '').localeCompare(b.customer?.name || '');
+        case 'status':      return (a.status || '').localeCompare(b.status || '');
+        default:            return 0;
       }
     });
 
     return list;
   }, [quotes, filter, search, yearFilter, sortBy]);
 
-  // Stats
-  const totalQuotes = quotes.length;
-  const sentCount = quotes.filter(q => q.status === 'sent').length;
-  const acceptedCount = quotes.filter(q => q.status === 'accepted').length;
-  const convertedCount = quotes.filter(q => q.status === 'converted').length;
-  const pendingValue = quotes
-    .filter(q => q.status === 'sent' || q.status === 'draft')
-    .reduce((s, q) => s + (q.totals?.finalTotal || 0), 0);
-
-  const formatCurrency = (amount) =>
-    new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(amount || 0);
-
+  // ── Status helpers ────────────────────────────────────────────────────────
   const getStatusClass = (status) => {
     const map = {
-      draft: 'badge-draft',
-      sent: 'badge-sent',
-      accepted: 'badge-accepted',
-      declined: 'badge-declined',
-      converted: 'badge-converted',
+      draft: 'badge-draft', sent: 'badge-sent', accepted: 'badge-accepted',
+      declined: 'badge-declined', converted: 'badge-converted',
     };
     return map[status] || 'badge-draft';
   };
@@ -104,6 +100,7 @@ function QuoteList({ user, onCreateNew }) {
     return new Date(validUntil) < new Date(todayISO());
   };
 
+  // ── Actions ───────────────────────────────────────────────────────────────
   const handleStatusChange = async (quoteId, newStatus) => {
     setUpdatingId(quoteId);
     const result = await updateQuoteStatus(quoteId, newStatus);
@@ -112,11 +109,12 @@ function QuoteList({ user, onCreateNew }) {
   };
 
   const handleConvertToInvoice = async (quote) => {
-    if (!confirm(`Convert Quote ${quote.quoteNumber} to an Invoice?\n\nThis will create a new invoice with the same services and mark this quote as Converted.`)) return;
+    if (!confirm(
+      `Convert Quote ${quote.quoteNumber} to an Invoice?\n\nThis will create a new invoice with the same services and mark this quote as Converted.`
+    )) return;
 
     setConvertingId(quote.id);
     try {
-      // Atomically increment the invoice counter
       const counterRef = doc(db, 'counters', 'invoices');
       let invoiceNumber = '';
 
@@ -124,37 +122,35 @@ function QuoteList({ user, onCreateNew }) {
         const counterDoc = await t.get(counterRef);
         const count = (counterDoc.exists() ? counterDoc.data().count : 0) + 1;
         t.set(counterRef, { count });
-        const year = new Date().getFullYear();
+        const year   = new Date().getFullYear();
         const prefix = clientConfig.invoicePrefix || 'TFS';
         invoiceNumber = `${prefix}-${year}-${count.toString().padStart(4, '0')}`;
       });
 
-      // Create the invoice
       const invoiceRef = await addDoc(collection(db, 'invoices'), {
-        userId: quote.userId,
+        userId:   quote.userId,
         customer: quote.customer,
-        number: invoiceNumber,
-        date: todayISO(),
+        number:   invoiceNumber,
+        date:     todayISO(),
         services: quote.services,
-        totals: quote.totals,
-        status: 'unpaid',
-        createdAt: Timestamp.now(),
-        convertedFromQuote: quote.id,
+        totals:   quote.totals,
+        status:   'unpaid',
+        createdAt:           Timestamp.now(),
+        convertedFromQuote:  quote.id,
       });
 
-      // Mark the quote as converted
       await updateDoc(doc(db, 'quotes', quote.id), {
-        status: 'converted',
+        status:            'converted',
         convertedToInvoice: invoiceRef.id,
-        convertedAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
+        convertedAt:       Timestamp.now(),
+        updatedAt:         Timestamp.now(),
       });
 
-      // Update local state
       setQuotes(prev =>
-        prev.map(q => q.id === quote.id
-          ? { ...q, status: 'converted', convertedToInvoice: invoiceRef.id }
-          : q
+        prev.map(q =>
+          q.id === quote.id
+            ? { ...q, status: 'converted', convertedToInvoice: invoiceRef.id }
+            : q
         )
       );
 
@@ -181,22 +177,22 @@ function QuoteList({ user, onCreateNew }) {
       const result = await httpsCallable(functions, 'previewQuotePDF')({
         items,
         customerName: quote.customer?.name || 'Client',
-        quoteNumber: quote.quoteNumber,
-        quoteDate: formatDate(quote.date),
-        validUntil: formatDate(quote.validUntil),
-        subtotal: quote.totals?.subtotal?.toFixed(2) || '0.00',
-        tax: quote.totals?.taxAmount?.toFixed(2) || '0.00',
-        total: quote.totals?.finalTotal?.toFixed(2) || '0.00',
-        notes: quote.notes || '',
+        quoteNumber:  quote.quoteNumber,
+        quoteDate:    formatDate(quote.date),
+        validUntil:   formatDate(quote.validUntil),
+        subtotal:     quote.totals?.subtotal?.toFixed(2)   || '0.00',
+        tax:          quote.totals?.taxAmount?.toFixed(2)  || '0.00',
+        total:        quote.totals?.finalTotal?.toFixed(2) || '0.00',
+        notes:        quote.notes || '',
       });
 
       if (!result.data.success || !result.data.pdfBase64) throw new Error('No PDF returned');
 
       const bytes = new Uint8Array(atob(result.data.pdfBase64).split('').map(c => c.charCodeAt(0)));
-      const blob = new Blob([bytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
+      const blob  = new Blob([bytes], { type: 'application/pdf' });
+      const url   = URL.createObjectURL(blob);
+      const link  = document.createElement('a');
+      link.href     = url;
       link.download = `Quote-${quote.quoteNumber}.pdf`;
       document.body.appendChild(link);
       link.click();
@@ -209,6 +205,7 @@ function QuoteList({ user, onCreateNew }) {
     }
   };
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="invoice-list-admin quote-list-admin">
 
@@ -220,7 +217,7 @@ function QuoteList({ user, onCreateNew }) {
         </div>
       )}
 
-      {/* Stats */}
+      {/* ── Stats cards — unchanged ──────────────────────────────────────── */}
       <div className="admin-stats">
         <div className="stat-card">
           <div className="stat-icon"><i className="fas fa-file-alt"></i></div>
@@ -244,7 +241,45 @@ function QuoteList({ user, onCreateNew }) {
         </div>
       </div>
 
-      {/* Controls */}
+      {/*
+       * ── Pending-quotes banner ────────────────────────────────────────────
+       * Mirrors the `outstanding-banner` in InvoiceList.jsx exactly.
+       * Shows whenever there are draft or sent quotes awaiting action.
+       * "New Quote" button lives here — always visible without scrolling.
+       */}
+      {pendingCount > 0 && (
+        <div className="outstanding-banner">
+          <span>
+            <i className="fas fa-clock"></i>
+            <strong> Pending: </strong>
+            {formatCurrency(pendingValue)} across {pendingCount} pending quote{pendingCount > 1 ? 's' : ''}
+          </span>
+          <button className="btn-new-invoice" onClick={onCreateNew}>
+            <i className="fas fa-plus"></i> New Quote
+          </button>
+        </div>
+      )}
+
+      {/*
+       * When there are NO pending quotes (all accepted/declined/converted),
+       * still offer the "New Quote" button in a subtle empty-state banner
+       * so the user can always create one without hunting for it.
+       */}
+      {pendingCount === 0 && !loading && (
+        <div className="outstanding-banner outstanding-banner--neutral">
+          <span>
+            <i className="fas fa-check-circle"></i>
+            {totalQuotes > 0
+              ? ' All quotes resolved — nothing pending.'
+              : ' No quotes yet.'}
+          </span>
+          <button className="btn-new-invoice" onClick={onCreateNew}>
+            <i className="fas fa-plus"></i> New Quote
+          </button>
+        </div>
+      )}
+
+      {/* ── Controls ─────────────────────────────────────────────────────── */}
       <div className="list-controls">
         <div className="filter-buttons">
           {['all', ...STATUS_OPTIONS].map(f => (
@@ -292,7 +327,7 @@ function QuoteList({ user, onCreateNew }) {
         </div>
       </div>
 
-      {/* Table */}
+      {/* ── Table ────────────────────────────────────────────────────────── */}
       <div className="invoices-table quotes-table">
         <div className="table-header quotes-table-header">
           <span>Quote #</span>
@@ -326,7 +361,10 @@ function QuoteList({ user, onCreateNew }) {
         )}
 
         {!loading && !error && filtered.map((q) => (
-          <div key={q.id} className={`table-row quotes-table-row ${q.status === 'converted' ? 'row-converted' : ''}`}>
+          <div
+            key={q.id}
+            className={`table-row quotes-table-row ${q.status === 'converted' ? 'row-converted' : ''}`}
+          >
             <div className="inv-number">{q.quoteNumber}</div>
 
             <div className="inv-customer">
@@ -403,16 +441,13 @@ function QuoteList({ user, onCreateNew }) {
         ))}
       </div>
 
-      {/* Footer */}
+      {/* ── Footer — refresh + count only (New Quote moved to banner) ────── */}
       {!loading && (
         <div className="list-footer">
           <button className="btn-refresh" onClick={refreshQuotes}>
             <i className="fas fa-sync-alt"></i> Refresh
           </button>
           <span className="list-count">{filtered.length} of {quotes.length} quotes</span>
-          <button className="btn-new-invoice" onClick={onCreateNew}>
-            <i className="fas fa-plus"></i> New Quote
-          </button>
         </div>
       )}
 

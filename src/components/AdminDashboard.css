@@ -312,3 +312,74 @@
     display: none;
   }
 }
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * AdminDashboard.css — ADDITIONS ONLY
+ * Append these rules to the END of your existing AdminDashboard.css file.
+ * They do NOT modify any existing selectors.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+/* ── 1. Hide desktop nav tabs on mobile ───────────────────────────────────
+   The `.admin-tabs--desktop-only` modifier is added in AdminDashboard.jsx
+   alongside the existing `admin-tabs` class. This keeps the original
+   `.admin-tabs` CSS rules completely untouched.                           */
+@media (max-width: 767px) {
+  .admin-tabs--desktop-only {
+    display: none !important;
+  }
+}
+
+/* ── 2. Prevent horizontal overflow on mobile ─────────────────────────────
+   Ensures ServiceCalculator, InvoiceForm, etc. never cause horizontal scroll
+   on narrow screens.                                                       */
+@media (max-width: 767px) {
+  .admin-dashboard {
+    overflow-x: hidden;
+  }
+
+  .admin-main {
+    /* Remove left/right padding on very small screens so forms don't overflow */
+    padding-left: 0;
+    padding-right: 0;
+    /* Add extra bottom padding so FAB doesn't obscure the last row of content */
+    padding-bottom: 5rem;
+  }
+}
+
+/* ── 3. Stats bar — horizontal scroll on mobile ───────────────────────────
+   The 5-item stats bar can overflow on narrow viewports. Allow it to scroll
+   horizontally rather than wrapping awkwardly.                             */
+@media (max-width: 767px) {
+  .admin-stats-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Prevent the scrollbar from adding visual noise */
+    scrollbar-width: none;
+  }
+  .admin-stats-bar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ── 4. Header adjustments on mobile ─────────────────────────────────────
+   Tighten the header so it doesn't consume too much vertical real estate.  */
+@media (max-width: 767px) {
+  .admin-header-top {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Compress the logo area */
+  .header-logo {
+    height: 36px;
+  }
+
+  /* Truncate long email addresses gracefully */
+  .user-email {
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

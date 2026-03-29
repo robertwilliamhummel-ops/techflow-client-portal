@@ -1,0 +1,140 @@
+/*
+ * MobileTabs.css
+ * Scoped entirely to .mobile-tabs — no leakage into LoginPage or Dashboard.
+ * These styles are irrelevant on desktop; the component is never mounted there.
+ *
+ * CSS custom properties used:
+ *   --primary        (falls back to #667eea, matching clientConfig.primaryColor)
+ *   --bg-card        (falls back to #1a1a2e for dark theme parity)
+ *   --text-primary   (falls back to #e2e8f0)
+ *   --border-color   (falls back to rgba(255,255,255,0.08))
+ */
+
+/* ── Wrapper ─────────────────────────────────────────────────────────────── */
+.mobile-tabs {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+
+  /* Sticky behaviour — stays at top of viewport when user scrolls */
+  position: sticky;
+  top: 0;
+  z-index: 50;
+
+  background: var(--bg-card, #1a1a2e);
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+
+  /* Prevent content from touching the edges on very narrow screens */
+  box-sizing: border-box;
+}
+
+/* ── Individual tab button ───────────────────────────────────────────────── */
+.mobile-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  /* Minimum 44 × 56 px touch target (WCAG 2.5.5 / Apple HIG) */
+  min-height: 56px;
+  padding: 10px 8px;
+
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+
+  color: var(--text-secondary, #a0aec0);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.mobile-tab:active {
+  background: rgba(102, 126, 234, 0.06);
+}
+
+/* ── Active state ────────────────────────────────────────────────────────── */
+.mobile-tab--active {
+  color: var(--primary, #667eea);
+  border-bottom-color: var(--primary, #667eea);
+  font-weight: 600;
+}
+
+/* ── Icon & label inside a tab ───────────────────────────────────────────── */
+.mobile-tab-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.mobile-tab-label {
+  font-size: 0.68rem;
+  line-height: 1;
+}
+
+/* ── Back-button mode (.mobile-tabs--back) ───────────────────────────────── */
+.mobile-tabs--back {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  min-height: 52px;
+  gap: 0;
+}
+
+.mobile-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  /* 44 px minimum touch target */
+  min-height: 44px;
+  padding: 0 8px;
+
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--primary, #667eea);
+  font-size: 0.9rem;
+  font-weight: 600;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition: opacity 0.15s ease;
+}
+
+.mobile-back-btn:active {
+  opacity: 0.65;
+}
+
+.mobile-back-btn i {
+  font-size: 1rem;
+}
+
+.mobile-form-title {
+  flex: 1;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary, #e2e8f0);
+  letter-spacing: 0.01em;
+}
+
+.mobile-form-title i {
+  margin-right: 6px;
+  color: var(--primary, #667eea);
+}
+
+/* Spacer mirrors back-btn width so the title is truly centred */
+.mobile-tabs-spacer {
+  display: inline-block;
+  min-height: 44px;
+  width: 64px; /* approx width of the back button */
+  flex-shrink: 0;
+}

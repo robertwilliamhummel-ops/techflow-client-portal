@@ -1,0 +1,114 @@
+/*
+ * FloatingActionButton.css
+ * Scoped entirely to .fab — no leakage.
+ * The component itself is never rendered on desktop, but these rules include
+ * a media-query guard as belt-and-suspenders insurance.
+ *
+ * CSS custom properties:
+ *   --primary        (fallback: #667eea)
+ *   --primary-dark   (fallback: #5a67d8)
+ */
+
+/* ── Core FAB shape ──────────────────────────────────────────────────────── */
+.fab {
+  /* Fixed to bottom-right corner, above all content */
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 200;
+
+  /* Circular, 60 × 60 px — well above 44 px minimum touch target */
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--primary, #667eea);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+
+  /* Elevation */
+  box-shadow:
+    0 4px 14px rgba(102, 126, 234, 0.55),
+    0 2px 6px  rgba(0, 0, 0, 0.35);
+
+  /* Smooth transitions */
+  transition:
+    transform  0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+
+  /* Icon layout */
+  position: fixed; /* re-state so the icon children are relative to this */
+}
+
+/* ── Hover / active states ───────────────────────────────────────────────── */
+.fab:hover {
+  background: var(--primary-dark, #5a67d8);
+  transform: scale(1.08);
+  box-shadow:
+    0 6px 20px rgba(102, 126, 234, 0.65),
+    0 3px 8px  rgba(0, 0, 0, 0.4);
+}
+
+.fab:active {
+  transform: scale(0.94);
+  box-shadow:
+    0 2px 8px rgba(102, 126, 234, 0.4),
+    0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Icon system ─────────────────────────────────────────────────────────── */
+/*
+ * Two-icon approach:
+ *   .fab-icon-plus     — large "+" centred in the button (primary affordance)
+ *   .fab-icon-context  — tiny context icon (invoice/quote) shown bottom-right
+ *                        as a small badge to reinforce what will be created
+ */
+.fab-icon-plus {
+  font-size: 1.45rem;
+  line-height: 1;
+  /* Shift slightly up so the context badge doesn't overlap */
+  margin-top: -4px;
+}
+
+.fab-icon-context {
+  position: absolute;
+  bottom: 9px;
+  right: 9px;
+  font-size: 0.6rem;
+  line-height: 1;
+  opacity: 0.85;
+  /* Prevent it from capturing pointer events */
+  pointer-events: none;
+}
+
+/* ── Enter animation ─────────────────────────────────────────────────────── */
+.fab {
+  animation: fab-enter 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes fab-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.55) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ── Belt-and-suspenders: never show on desktop ──────────────────────────── */
+@media (min-width: 768px) {
+  .fab {
+    display: none !important;
+  }
+}

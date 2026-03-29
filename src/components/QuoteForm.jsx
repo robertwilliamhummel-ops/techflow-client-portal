@@ -5,18 +5,26 @@ import { db, functions } from '../config/firebase';
 import { useQuoteCounter } from '../hooks/useQuoteCounter';
 import { formatDate, todayISO, formatCurrency } from '../utils/formatters';
 import { validateCustomer, validateCustomerEmail } from '../utils/validators';
+import { isMobileDevice, downloadPdfMobile, createPdfBlobUrl } from '../utils/pdfUtils';
 import CustomerSection from './CustomerSection';
 import ServiceCalculator from './ServiceCalculator';
 import './QuoteForm.css';
 
-// Default: 30 days from today
+/**
+ * QuoteForm — mobile PDF fix summary
+ * ─────────────────────────────────────────────────────────────────────────
+ * Same root cause and fix as InvoiceForm:
+ *   Desktop  → blob URL → <iframe> inline preview (unchanged)
+ *   Mobile   → downloadPdfMobile() → OS native PDF viewer
+ * ─────────────────────────────────────────────────────────────────────────
+ */
+
 function thirtyDaysFromNow() {
   const d = new Date();
   d.setDate(d.getDate() + 30);
   return d.toISOString().split('T')[0];
 }
 
-// Totals box polls the calculator ref every 200ms
 function TotalsBox({ calcRef, chargeHST }) {
   const [totals, setTotals] = useState({
     hourlyTotal: 0, lineItemsTotal: 0, subtotal: 0, taxAmount: 0, finalTotal: 0,
@@ -44,15 +52,15 @@ function TotalsBox({ calcRef, chargeHST }) {
 
 function QuoteForm({ user, onQuoteSent }) {
   const { quoteNumber, consumeNumber } = useQuoteCounter(user?.uid);
-  const [quoteDate, setQuoteDate] = useState(todayISO());
-  const [validUntil, setValidUntil] = useState(thirtyDaysFromNow());
-  const [customer, setCustomer] = useState({});
-  const [chargeHST, setChargeHST] = useState(false);
-  const [notes, setNotes] = useState('');
-  const [toast, setToast] = useState(null);
-  const [previewing, setPreviewing] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
+  const [quoteDate, setQuoteDate]     = useState(todayISO());
+  const [validUntil, setValidUntil]   = useState(thirtyDaysFromNow());
+  const [customer, setCustomer]       = useState({});
+  const [chargeHST, setChargeHST]     = useState(false);
+  const [notes, setNotes]             = useState('');
+  const [toast, setToast]             = useState(null);
+  const [previewing, setPreviewing]   = useState(false);
+  const [sending, setSending]         = useState(false);
+  const [pdfBlobUrl, setPdfBlobUrl]   = useState(null); // desktop only
   const calcRef = useRef();
 
   const showToast = (message, type = 'success') => {
@@ -71,6 +79,7 @@ function QuoteForm({ user, onQuoteSent }) {
     return items;
   };
 
+  // ── Preview ───────────────────────────────────────────────────────────────
   const handlePreview = async () => {
     const err1 = validateCustomer(customer);
     if (err1.length) { showToast(err1[0], 'error'); return; }
@@ -82,21 +91,34 @@ function QuoteForm({ user, onQuoteSent }) {
 
     try {
       const { hourlyServices, lineItems, totals } = calcRef.current.getData(chargeHST);
+
       const result = await httpsCallable(functions, 'previewQuotePDF')({
-        items: buildItems(hourlyServices, lineItems),
+        items:        buildItems(hourlyServices, lineItems),
         customerName: customer.name,
         quoteNumber,
-        quoteDate: formatDate(quoteDate),
-        validUntil: formatDate(validUntil),
-        subtotal: totals.subtotal.toFixed(2),
-        tax: totals.taxAmount.toFixed(2),
-        total: totals.finalTotal.toFixed(2),
+        quoteDate:    formatDate(quoteDate),
+        validUntil:   formatDate(validUntil),
+        subtotal:     totals.subtotal.toFixed(2),
+        tax:          totals.taxAmount.toFixed(2),
+        total:        totals.finalTotal.toFixed(2),
         notes,
       });
 
-      if (!result.data.success || !result.data.pdfBase64) throw new Error('No PDF data returned');
-      const bytes = new Uint8Array(atob(result.data.pdfBase64).split('').map(c => c.charCodeAt(0)));
-      setPdfBlobUrl(URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })));
+      if (!result.data.success || !result.data.pdfBase64) {
+        throw new Error('No PDF data returned');
+      }
+
+      if (isMobileDevice()) {
+        // ── Mobile path ──────────────────────────────────────────────────
+        downloadPdfMobile(
+          result.data.pdfBase64,
+          `Quote-${quoteNumber}.pdf`
+        );
+        showToast('PDF sent to your device — check Downloads / Files.', 'info');
+      } else {
+        // ── Desktop path ─────────────────────────────────────────────────
+        setPdfBlobUrl(createPdfBlobUrl(result.data.pdfBase64));
+      }
     } catch (err) {
       showToast(`Preview failed: ${err.message}`, 'error');
     } finally {
@@ -104,6 +126,7 @@ function QuoteForm({ user, onQuoteSent }) {
     }
   };
 
+  // ── Send ──────────────────────────────────────────────────────────────────
   const handleSend = async () => {
     const err1 = validateCustomer(customer);
     if (err1.length) { showToast(err1[0], 'error'); return; }
@@ -118,34 +141,34 @@ function QuoteForm({ user, onQuoteSent }) {
       const confirmedNumber = await consumeNumber();
 
       const docRef = await addDoc(collection(db, 'quotes'), {
-        userId: user.uid,
+        userId:    user.uid,
         customer,
         quoteNumber: confirmedNumber,
-        date: quoteDate,
+        date:       quoteDate,
         validUntil,
-        services: { hourly: hourlyServices, lineItems },
+        services:   { hourly: hourlyServices, lineItems },
         totals: {
-          subtotal: totals.subtotal,
-          taxAmount: totals.taxAmount,
+          subtotal:   totals.subtotal,
+          taxAmount:  totals.taxAmount,
           finalTotal: totals.finalTotal,
         },
         notes,
-        status: 'sent',
+        status:            'sent',
         convertedToInvoice: null,
-        createdAt: Timestamp.now(),
-        sentAt: Timestamp.now(),
+        createdAt:         Timestamp.now(),
+        sentAt:            Timestamp.now(),
       });
 
       await httpsCallable(functions, 'sendQuoteEmail')({
         customerEmail: customer.email,
-        customerName: customer.name,
-        quoteNumber: confirmedNumber,
-        quoteDate: formatDate(quoteDate),
-        validUntil: formatDate(validUntil),
-        items: buildItems(hourlyServices, lineItems),
-        subtotal: totals.subtotal.toFixed(2),
-        tax: totals.taxAmount.toFixed(2),
-        total: totals.finalTotal.toFixed(2),
+        customerName:  customer.name,
+        quoteNumber:   confirmedNumber,
+        quoteDate:     formatDate(quoteDate),
+        validUntil:    formatDate(validUntil),
+        items:         buildItems(hourlyServices, lineItems),
+        subtotal:      totals.subtotal.toFixed(2),
+        tax:           totals.taxAmount.toFixed(2),
+        total:         totals.finalTotal.toFixed(2),
         notes,
       });
 
@@ -158,6 +181,7 @@ function QuoteForm({ user, onQuoteSent }) {
     }
   };
 
+  // ── Save Draft ────────────────────────────────────────────────────────────
   const handleSaveDraft = async () => {
     const err1 = validateCustomer(customer);
     if (err1.length) { showToast(err1[0], 'error'); return; }
@@ -170,22 +194,22 @@ function QuoteForm({ user, onQuoteSent }) {
       const confirmedNumber = await consumeNumber();
 
       await addDoc(collection(db, 'quotes'), {
-        userId: user.uid,
+        userId:    user.uid,
         customer,
         quoteNumber: confirmedNumber,
-        date: quoteDate,
+        date:       quoteDate,
         validUntil,
-        services: { hourly: hourlyServices, lineItems },
+        services:   { hourly: hourlyServices, lineItems },
         totals: {
-          subtotal: totals.subtotal,
-          taxAmount: totals.taxAmount,
+          subtotal:   totals.subtotal,
+          taxAmount:  totals.taxAmount,
           finalTotal: totals.finalTotal,
         },
         notes,
-        status: 'draft',
+        status:            'draft',
         convertedToInvoice: null,
-        createdAt: Timestamp.now(),
-        sentAt: null,
+        createdAt:         Timestamp.now(),
+        sentAt:            null,
       });
 
       showToast(`Draft ${confirmedNumber} saved!`, 'success');
@@ -197,6 +221,7 @@ function QuoteForm({ user, onQuoteSent }) {
     }
   };
 
+  // ── Clear ─────────────────────────────────────────────────────────────────
   const handleClear = () => {
     if (!confirm('Clear the form? All unsaved data will be lost.')) return;
     setCustomer({});
@@ -209,14 +234,23 @@ function QuoteForm({ user, onQuoteSent }) {
     showToast('Form cleared', 'info');
   };
 
+  const previewLabel = isMobileDevice() ? 'Open PDF' : 'Preview PDF';
+  const previewIcon  = isMobileDevice() ? 'fa-download' : 'fa-eye';
+
   return (
     <div className="invoice-form quote-form">
 
       {toast && (
         <div className={`inv-toast inv-toast-${toast.type}`}>
-          <i className={`fas ${toast.type === 'success' ? 'fa-check-circle' : toast.type === 'info' ? 'fa-info-circle' : 'fa-exclamation-circle'}`}></i>
+          <i className={`fas ${
+            toast.type === 'success' ? 'fa-check-circle'
+            : toast.type === 'info' ? 'fa-info-circle'
+            : 'fa-exclamation-circle'
+          }`}></i>
           {toast.message}
-          <button className="toast-close" onClick={() => setToast(null)}><i className="fas fa-times"></i></button>
+          <button className="toast-close" onClick={() => setToast(null)}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
       )}
 
@@ -225,9 +259,8 @@ function QuoteForm({ user, onQuoteSent }) {
         You are creating a <strong>Quote / Estimate</strong>. No payment is due until work is completed and an invoice is issued.
       </div>
 
-      {/* TOP ROW: Customer (left) | Quote Details + Totals (right) */}
+      {/* TOP ROW */}
       <div className="form-top-grid">
-
         <CustomerSection user={user} onCustomerChange={setCustomer} />
 
         <div className="form-card">
@@ -263,7 +296,11 @@ function QuoteForm({ user, onQuoteSent }) {
           </div>
 
           <label className="hst-label">
-            <input type="checkbox" checked={chargeHST} onChange={e => setChargeHST(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={chargeHST}
+              onChange={e => setChargeHST(e.target.checked)}
+            />
             Add HST (13%)
           </label>
 
@@ -271,12 +308,15 @@ function QuoteForm({ user, onQuoteSent }) {
         </div>
       </div>
 
-      {/* FULL WIDTH: Services */}
+      {/* Services */}
       <ServiceCalculator ref={calcRef} />
 
-      {/* Notes / Terms */}
+      {/* Notes */}
       <div className="form-card quote-notes-card">
-        <div className="card-title"><i className="fas fa-sticky-note"></i> Notes / Terms & Conditions <span className="optional-badge">Optional</span></div>
+        <div className="card-title">
+          <i className="fas fa-sticky-note"></i> Notes / Terms & Conditions{' '}
+          <span className="optional-badge">Optional</span>
+        </div>
         <textarea
           className="form-input quote-notes-textarea"
           placeholder="Add any notes, terms, or conditions for this quote..."
@@ -286,12 +326,20 @@ function QuoteForm({ user, onQuoteSent }) {
         />
       </div>
 
-      {/* PDF Preview */}
+      {/*
+       * Desktop-only inline preview.
+       * On mobile, isMobileDevice() causes handlePreview to call
+       * downloadPdfMobile() and never set pdfBlobUrl, so this block
+       * stays null on mobile — no iframe is ever mounted.
+       */}
       {pdfBlobUrl && (
         <div className="preview-section">
           <div className="preview-header">
             <span><i className="fas fa-eye"></i> Quote Preview</span>
-            <button className="btn-close-preview" onClick={() => { URL.revokeObjectURL(pdfBlobUrl); setPdfBlobUrl(null); }}>
+            <button
+              className="btn-close-preview"
+              onClick={() => { URL.revokeObjectURL(pdfBlobUrl); setPdfBlobUrl(null); }}
+            >
               <i className="fas fa-times"></i> Close
             </button>
           </div>
@@ -301,20 +349,36 @@ function QuoteForm({ user, onQuoteSent }) {
 
       {/* ACTION BUTTONS */}
       <div className="action-btns">
-        <button className="btn-preview-action" onClick={handlePreview} disabled={previewing || sending}>
+        <button
+          className="btn-preview-action"
+          onClick={handlePreview}
+          disabled={previewing || sending}
+        >
           {previewing
             ? <><i className="fas fa-spinner fa-spin"></i> Generating...</>
-            : <><i className="fas fa-eye"></i> Preview PDF</>}
+            : <><i className={`fas ${previewIcon}`}></i> {previewLabel}</>}
         </button>
-        <button className="btn-send-action" onClick={handleSend} disabled={sending || previewing}>
+        <button
+          className="btn-send-action"
+          onClick={handleSend}
+          disabled={sending || previewing}
+        >
           {sending
             ? <><i className="fas fa-spinner fa-spin"></i> Sending...</>
             : <><i className="fas fa-envelope"></i> Send Quote</>}
         </button>
-        <button className="btn-draft-action" onClick={handleSaveDraft} disabled={sending || previewing}>
+        <button
+          className="btn-draft-action"
+          onClick={handleSaveDraft}
+          disabled={sending || previewing}
+        >
           <i className="fas fa-save"></i> Save Draft
         </button>
-        <button className="btn-clear-action" onClick={handleClear} disabled={sending || previewing}>
+        <button
+          className="btn-clear-action"
+          onClick={handleClear}
+          disabled={sending || previewing}
+        >
           <i className="fas fa-redo"></i> Clear
         </button>
       </div>

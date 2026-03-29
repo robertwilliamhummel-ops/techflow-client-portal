@@ -1,4 +1,4 @@
-import { useState, forwardRef, useImperativeHandle, useMemo } from 'react';
+import { useState, forwardRef, useImperativeHandle, useMemo, useRef, useEffect } from 'react';
 import { roundToTwo } from '../utils/formatters';
 import './ServiceCalculator.css';
 
@@ -137,6 +137,191 @@ const DESCRIPTION_OPTIONS = {
   ],
 };
 
+// ── Material presets for line-item autocomplete ───────────────────────────────
+const MATERIAL_PRESETS = [
+  { label: 'Drywall Sheet 4x8', price: 18 },
+  { label: 'Drywall Sheet 4x12', price: 22 },
+  { label: 'Drywall Screws (1 lb box)', price: 14 },
+  { label: 'Joint Compound (pail)', price: 28 },
+  { label: 'Drywall Tape (roll)', price: 9 },
+  { label: 'Corner Bead', price: 12 },
+
+  { label: 'Interior Paint (1 gallon)', price: 55 },
+  { label: 'Exterior Paint (1 gallon)', price: 65 },
+  { label: 'Primer (1 gallon)', price: 45 },
+  { label: 'Caulking Tube', price: 7 },
+  { label: "Painter's Tape", price: 8 },
+  { label: 'Paint Roller Kit', price: 18 },
+  { label: 'Brush Set', price: 15 },
+  { label: 'Drop Sheets', price: 12 },
+
+  { label: 'Ceramic Tile (sq ft)', price: 6 },
+  { label: 'Porcelain Tile (sq ft)', price: 7 },
+  { label: 'Tile Adhesive (bag)', price: 35 },
+  { label: 'Grout (bag)', price: 25 },
+  { label: 'Floor Leveler (bag)', price: 40 },
+  { label: 'Laminate Flooring (sq ft)', price: 4 },
+  { label: 'Vinyl Plank Flooring (sq ft)', price: 5 },
+
+  { label: 'Cleaning Supplies', price: 30 },
+  { label: 'Garbage Bags (Contractor box)', price: 25 },
+  { label: 'Rags / Towels', price: 12 },
+  { label: 'Shop Towels', price: 15 },
+  { label: 'Broom / Dustpan', price: 20 },
+  { label: 'Disinfectant / Chemicals', price: 18 },
+
+  { label: 'Nails (box)', price: 12 },
+  { label: 'Wood Screws (box)', price: 15 },
+  { label: 'Anchors / Fasteners', price: 18 },
+  { label: 'Construction Adhesive', price: 9 },
+  { label: 'Silicone Sealant', price: 8 },
+  { label: 'Expanding Foam', price: 14 },
+
+  { label: '2x4 Lumber', price: 7 },
+  { label: '2x6 Lumber', price: 10 },
+  { label: 'Plywood Sheet', price: 38 },
+  { label: 'OSB Board', price: 30 },
+  { label: 'Pressure Treated Lumber', price: 12 },
+  { label: 'Trim / Moulding', price: 20 },
+
+  { label: 'Electrical Wire (roll)', price: 60 },
+  { label: 'Outlet / Receptacle', price: 6 },
+  { label: 'Light Switch', price: 5 },
+  { label: 'Junction Box', price: 8 },
+  { label: 'LED Light Fixture', price: 45 },
+  { label: 'Breaker / Panel Part', price: 35 },
+
+  { label: 'PVC Pipe', price: 12 },
+  { label: 'PEX Pipe', price: 15 },
+  { label: 'Pipe Fittings', price: 10 },
+  { label: 'Plumbing Sealant / Tape', price: 6 },
+  { label: 'Shutoff Valve', price: 18 },
+
+  { label: 'Shingles Bundle', price: 45 },
+  { label: 'Roofing Nails', price: 14 },
+  { label: 'Eavestrough Materials', price: 85 },
+  { label: 'Flashing', price: 20 },
+  { label: 'Waterproof Membrane', price: 50 },
+
+  { label: 'Equipment Rental (per day)', price: 120 },
+  { label: 'Delivery / Pickup', price: 60 },
+  { label: 'Dump Fees', price: 90 },
+  { label: 'Permit Fees', price: 180 },
+  { label: 'Labour Adjustment / Misc', price: 50 },
+];
+
+const RECENTS_KEY = 'materialRecents';
+const MAX_RECENTS = 10;
+
+function loadRecents() {
+  try {
+    return JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveRecent(preset) {
+  try {
+    const prev = loadRecents().filter((r) => r.label !== preset.label);
+    localStorage.setItem(RECENTS_KEY, JSON.stringify([preset, ...prev].slice(0, MAX_RECENTS)));
+  } catch {
+    // localStorage unavailable — silently skip
+  }
+}
+
+// ── Autocomplete dropdown for a single line-item description field ────────────
+function DescriptionAutocomplete({ value, onChange, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const [recents, setRecents] = useState(loadRecents);
+  const wrapRef = useRef(null);
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const query = value.trim().toLowerCase();
+
+  const filteredPresets = query.length >= 2
+    ? MATERIAL_PRESETS.filter((p) => p.label.toLowerCase().includes(query)).slice(0, 8)
+    : [];
+
+  // Recents shown when field is focused but nothing typed yet
+  const showRecents = open && query.length < 2 && recents.length > 0;
+  const showMatches = open && filteredPresets.length > 0;
+  const isOpen = showRecents || showMatches;
+
+  const handleSelect = (preset) => {
+    onSelect(preset);
+    saveRecent(preset);
+    setRecents(loadRecents());
+    setOpen(false);
+  };
+
+  const formatCurrency = (n) =>
+    new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: 0 }).format(n);
+
+  return (
+    <div className="desc-autocomplete-wrap" ref={wrapRef}>
+      <input
+        type="text"
+        className="form-input"
+        placeholder="Fixed fee, materials, license, etc."
+        value={value}
+        autoComplete="off"
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+      />
+      {isOpen && (
+        <div className="material-suggestions">
+          {showRecents && (
+            <>
+              <div className="suggestions-group-label">
+                <i className="fas fa-history"></i> Recently used
+              </div>
+              {recents.map((r) => (
+                <button
+                  key={r.label}
+                  className="suggestion-item"
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); handleSelect(r); }}
+                >
+                  <span className="suggestion-label">{r.label}</span>
+                  <span className="suggestion-price">{formatCurrency(r.price)}</span>
+                </button>
+              ))}
+            </>
+          )}
+          {showMatches && (
+            <>
+              {showRecents && <div className="suggestions-divider" />}
+              <div className="suggestions-group-label">
+                <i className="fas fa-box"></i> Materials
+              </div>
+              {filteredPresets.map((p) => (
+                <button
+                  key={p.label}
+                  className="suggestion-item"
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); handleSelect(p); }}
+                >
+                  <span className="suggestion-label">{p.label}</span>
+                  <span className="suggestion-price">{formatCurrency(p.price)}</span>
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const SERVICE_TYPE_GROUPS = [...new Set(SERVICE_TYPES.map((t) => t.group))];
 
 const newHourly = () => ({
@@ -182,6 +367,18 @@ const ServiceCalculator = forwardRef(function ServiceCalculator(_, ref) {
         }
         return { ...s, [field]: value };
       })
+    );
+  };
+
+  const updateLineItem = (id, field, value) =>
+    setLineItems((p) => p.map((i) => (i.id !== id ? i : { ...i, [field]: value })));
+
+  // Called when user clicks a material suggestion for a line item
+  const applyMaterialPreset = (id, preset) => {
+    setLineItems((p) =>
+      p.map((i) =>
+        i.id !== id ? i : { ...i, description: preset.label, price: String(preset.price) }
+      )
     );
   };
 
@@ -398,18 +595,10 @@ const ServiceCalculator = forwardRef(function ServiceCalculator(_, ref) {
         <div className="lineitem-row" key={item.id}>
           <div className="form-group desc-col">
             <label className="form-label">Description</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="Fixed fee, materials, license, etc."
+            <DescriptionAutocomplete
               value={item.description}
-              onChange={(e) =>
-                setLineItems((p) =>
-                  p.map((i) =>
-                    i.id !== item.id ? i : { ...i, description: e.target.value }
-                  )
-                )
-              }
+              onChange={(val) => updateLineItem(item.id, 'description', val)}
+              onSelect={(preset) => applyMaterialPreset(item.id, preset)}
             />
           </div>
           <div className="form-group">
@@ -420,13 +609,7 @@ const ServiceCalculator = forwardRef(function ServiceCalculator(_, ref) {
               min="1"
               step="1"
               value={item.quantity}
-              onChange={(e) =>
-                setLineItems((p) =>
-                  p.map((i) =>
-                    i.id !== item.id ? i : { ...i, quantity: e.target.value }
-                  )
-                )
-              }
+              onChange={(e) => updateLineItem(item.id, 'quantity', e.target.value)}
             />
           </div>
           <div className="form-group">
@@ -438,13 +621,7 @@ const ServiceCalculator = forwardRef(function ServiceCalculator(_, ref) {
               step="0.01"
               placeholder="0.00"
               value={item.price}
-              onChange={(e) =>
-                setLineItems((p) =>
-                  p.map((i) =>
-                    i.id !== item.id ? i : { ...i, price: e.target.value }
-                  )
-                )
-              }
+              onChange={(e) => updateLineItem(item.id, 'price', e.target.value)}
             />
           </div>
           <div className="form-group remove-col">

@@ -187,3 +187,88 @@
   .service-row { grid-template-columns: 1fr 1fr; }
   .lineitem-row { grid-template-columns: 1fr 1fr; }
 }
+/* ── Material autocomplete — append to ServiceCalculator.css ─────────────────
+   These are the ONLY new rules. Nothing above this comment is changed.       */
+
+/* Wrapper gives the dropdown a positioning context */
+.desc-autocomplete-wrap {
+  position: relative;
+  width: 100%;
+}
+
+/* Dropdown panel */
+.material-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: #1a1a2e;
+  border: 1px solid rgba(102, 126, 234, 0.35);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+/* Section headers ("Recently used", "Materials") */
+.suggestions-group-label {
+  padding: 6px 12px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+/* Thin divider between recent + matches sections */
+.suggestions-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  margin: 4px 0;
+}
+
+/* Individual suggestion row */
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+  gap: 8px;
+}
+
+.suggestion-item:hover {
+  background: rgba(102, 126, 234, 0.12);
+}
+
+.suggestion-item:active {
+  background: rgba(102, 126, 234, 0.2);
+}
+
+.suggestion-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-price {
+  font-size: 12px;
+  font-weight: 600;
+  color: #667eea;
+  flex-shrink: 0;
+  font-family: monospace;
+}

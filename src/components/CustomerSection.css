@@ -16,11 +16,23 @@
 }
 .card-title i { color: #667eea; }
 
+/* Toast is fixed to the bottom of the viewport on ALL screen sizes so it stays
+   visible when the user is scrolled down to the action buttons (desktop or mobile). */
 .cs-toast {
   padding: 9px 14px;
   border-radius: 6px;
   font-size: 12px;
-  margin-bottom: 14px;
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 1.5rem;
+  z-index: 301;
+  min-width: 260px;
+  max-width: calc(100vw - 2rem);
+  margin: 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .cs-toast-success { background: rgba(72,199,142,0.1); border: 1px solid rgba(72,199,142,0.2); color: #48c78e; }
 .cs-toast-error   { background: rgba(241,70,104,0.1); border: 1px solid rgba(241,70,104,0.2); color: #f14668; }
@@ -139,16 +151,12 @@
 .btn-save-customer:disabled,
 .btn-delete-customer:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Mobile: full-width strip, respect device safe-area */
 @media (max-width: 768px) {
   .cs-toast {
-    position: fixed;
     left: 12px;
     right: 12px;
+    transform: none;
     bottom: max(16px, env(safe-area-inset-bottom, 0px));
-    z-index: 301;
-    margin: 0;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
   }
 }

@@ -19,19 +19,30 @@
 .toast-close { margin-left: auto; background: none; border: none; color: inherit; cursor: pointer; opacity: 0.6; font-size: 13px; }
 .toast-close:hover { opacity: 1; }
 
-/* Mobile: toast at top of document is off-screen when user is scrolled to action buttons.
-   Pin to bottom of viewport (FAB is hidden on create-invoice / create-quote). */
+/* Toast is fixed to the bottom of the viewport on ALL screen sizes so it stays
+   visible when the user is scrolled down to the action buttons (desktop or mobile).
+   FAB is never rendered on create-invoice / create-quote so no clearance needed. */
+.inv-toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 1.5rem;
+  z-index: 300;
+  min-width: 280px;
+  max-width: calc(100vw - 2rem);
+  margin: 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Mobile: full-width strip, respect device safe-area (notch / home indicator) */
 @media (max-width: 768px) {
   .inv-toast {
-    position: fixed;
     left: 12px;
     right: 12px;
+    transform: none;
     bottom: max(16px, env(safe-area-inset-bottom, 0px));
-    z-index: 300;
-    margin: 0;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
   }
 }
 

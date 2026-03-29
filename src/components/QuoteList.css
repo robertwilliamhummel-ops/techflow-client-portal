@@ -1,17 +1,6 @@
 /* QuoteList.css — quote-specific styles (base classes come from InvoiceList.css) */
 
 /* ── Toast ─────────────────────────────────────────────── */
-.ql-toast {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  margin-bottom: 16px;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
 .ql-toast button {
   background: none;
   border: none;
@@ -32,18 +21,37 @@
   color: #9b1c1c;
 }
 
-/* Mobile: list views keep FAB bottom-right — lift toast so it clears the FAB */
+/* Toast is fixed to the bottom of the viewport on ALL screen sizes so it stays
+   visible when the user is scrolled down to the action buttons (desktop or mobile).
+   On desktop the FAB is never rendered, so 1.5rem clearance is sufficient. */
+.ql-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 1.5rem;
+  z-index: 300;
+  min-width: 280px;
+  max-width: calc(100vw - 2rem);
+  margin: 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Mobile: full-width strip + lift above FAB + respect safe-area */
 @media (max-width: 768px) {
   .ql-toast {
-    position: fixed;
     left: 12px;
     right: 12px;
+    transform: none;
     bottom: max(calc(5.5rem + env(safe-area-inset-bottom, 0px)), 16px);
-    z-index: 300;
-    margin: 0;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
   }
 }
 

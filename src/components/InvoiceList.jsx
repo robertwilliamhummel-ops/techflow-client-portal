@@ -1,16 +1,19 @@
 import { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 import { db } from '../config/firebase';
 import './InvoiceList.css';
 
 function InvoiceList({ user, onCreateNew }) {
-  const [invoices, setInvoices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [filter, setFilter] = useState('all');
-  const [search, setSearch] = useState('');
+  const navigate = useNavigate();
+
+  const [invoices, setInvoices]   = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState('');
+  const [filter, setFilter]       = useState('all');
+  const [search, setSearch]       = useState('');
   const [yearFilter, setYearFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('date-desc');
+  const [sortBy, setSortBy]       = useState('date-desc');
   const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => {
@@ -30,14 +33,11 @@ function InvoiceList({ user, onCreateNew }) {
       snapshot.forEach((doc) => {
         list.push({ id: doc.id, ...doc.data() });
       });
-
-      // Default sort newest first
       list.sort((a, b) => {
         const dateA = a.createdAt?.toDate?.() || new Date(a.date);
         const dateB = b.createdAt?.toDate?.() || new Date(b.date);
         return dateB - dateA;
       });
-
       setInvoices(list);
     } catch (err) {
       console.error('Error fetching invoices:', err);
@@ -69,23 +69,18 @@ function InvoiceList({ user, onCreateNew }) {
     });
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-CA', {
-      style: 'currency', currency: 'CAD'
-    }).format(amount || 0);
-  };
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(amount || 0);
 
-  // Derive available years from data
   const availableYears = useMemo(() => {
     const years = new Set(invoices.map(inv => inv.date?.slice(0, 4)).filter(Boolean));
     return Array.from(years).sort((a, b) => b - a);
   }, [invoices]);
 
-  // Filter + search + sort
   const filtered = useMemo(() => {
     let list = invoices.filter(inv => {
       const matchesFilter = filter === 'all' || inv.status === filter;
-      const matchesYear = yearFilter === 'all' || inv.date?.startsWith(yearFilter);
+      const matchesYear   = yearFilter === 'all' || inv.date?.startsWith(yearFilter);
       const matchesSearch = search === '' ||
         inv.number?.toLowerCase().includes(search.toLowerCase()) ||
         inv.customer?.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -95,34 +90,25 @@ function InvoiceList({ user, onCreateNew }) {
 
     list = [...list].sort((a, b) => {
       switch (sortBy) {
-        case 'date-asc':
-          return new Date(a.date) - new Date(b.date);
-        case 'date-desc':
-          return new Date(b.date) - new Date(a.date);
-        case 'amount-desc':
-          return (b.totals?.finalTotal || 0) - (a.totals?.finalTotal || 0);
-        case 'amount-asc':
-          return (a.totals?.finalTotal || 0) - (b.totals?.finalTotal || 0);
-        case 'customer':
-          return (a.customer?.name || '').localeCompare(b.customer?.name || '');
-        case 'status':
-          return (a.status || '').localeCompare(b.status || '');
-        default:
-          return 0;
+        case 'date-asc':     return new Date(a.date) - new Date(b.date);
+        case 'date-desc':    return new Date(b.date) - new Date(a.date);
+        case 'amount-desc':  return (b.totals?.finalTotal || 0) - (a.totals?.finalTotal || 0);
+        case 'amount-asc':   return (a.totals?.finalTotal || 0) - (b.totals?.finalTotal || 0);
+        case 'customer':     return (a.customer?.name || '').localeCompare(b.customer?.name || '');
+        case 'status':       return (a.status || '').localeCompare(b.status || '');
+        default:             return 0;
       }
     });
-
     return list;
   }, [invoices, filter, search, yearFilter, sortBy]);
 
-  // Stats
   const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + (i.totals?.finalTotal || 0), 0);
-  const outstanding = invoices.filter(i => i.status === 'unpaid').reduce((s, i) => s + (i.totals?.finalTotal || 0), 0);
-  const paidCount = invoices.filter(i => i.status === 'paid').length;
-  const unpaidCount = invoices.filter(i => i.status === 'unpaid').length;
+  const outstanding  = invoices.filter(i => i.status === 'unpaid').reduce((s, i) => s + (i.totals?.finalTotal || 0), 0);
+  const paidCount    = invoices.filter(i => i.status === 'paid').length;
+  const unpaidCount  = invoices.filter(i => i.status === 'unpaid').length;
 
   const getStatusClass = (status) => {
-    if (status === 'paid') return 'badge-paid';
+    if (status === 'paid')      return 'badge-paid';
     if (status === 'cancelled') return 'badge-cancelled';
     return 'badge-unpaid';
   };
@@ -181,21 +167,11 @@ function InvoiceList({ user, onCreateNew }) {
           ))}
         </div>
         <div className="controls-right">
-          <select
-            className="sort-select"
-            value={yearFilter}
-            onChange={e => setYearFilter(e.target.value)}
-          >
+          <select className="sort-select" value={yearFilter} onChange={e => setYearFilter(e.target.value)}>
             <option value="all">All Years</option>
-            {availableYears.map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
+            {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
-          <select
-            className="sort-select"
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value)}
-          >
+          <select className="sort-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
             <option value="date-desc">Date: Newest First</option>
             <option value="date-asc">Date: Oldest First</option>
             <option value="amount-desc">Amount: High to Low</option>
@@ -232,9 +208,7 @@ function InvoiceList({ user, onCreateNew }) {
           </div>
         )}
 
-        {error && (
-          <div className="table-state error">{error}</div>
-        )}
+        {error && <div className="table-state error">{error}</div>}
 
         {!loading && !error && filtered.length === 0 && (
           <div className="table-state">
@@ -249,7 +223,19 @@ function InvoiceList({ user, onCreateNew }) {
 
         {!loading && !error && filtered.map((inv) => (
           <div key={inv.id} className="table-row">
-            <div className="inv-number">{inv.number}</div>
+            {/*
+             * Invoice number is now a clickable button that navigates to /invoice/:id
+             * for a full preview + reprint page.
+             */}
+            <div className="inv-number">
+              <button
+                className="inv-number-link"
+                onClick={() => navigate(`/invoice/${inv.id}`)}
+                title="View invoice preview"
+              >
+                {inv.number}
+              </button>
+            </div>
             <div className="inv-customer">
               <div className="customer-name">{inv.customer?.name || 'Unknown'}</div>
               {inv.customer?.company && (

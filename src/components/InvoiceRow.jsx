@@ -1,32 +1,27 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../config/firebase';
 import { downloadPdfMobile } from '../utils/pdfUtils';
 import './InvoiceRow.css';
 
 /**
- * InvoiceRow — client-facing invoice row with PDF download.
+ * InvoiceRow — client-facing invoice row.
  *
- * Mobile fix applied:
- *   Old code called URL.revokeObjectURL() immediately after link.click().
- *   Mobile browsers (iOS Safari, Android Chrome) read the blob URL
- *   asynchronously — by the time the OS tried to open the file, the URL
- *   was already dead, causing a silent failure.
- *
- *   Fix: delegate to downloadPdfMobile() from pdfUtils.js, which uses a
- *   2-second delayed revoke and ensures the <a> element is properly
- *   appended to the DOM before clicking (required by some Android WebViews).
+ * Changes from original:
+ *   • Invoice number is now a clickable button that navigates to /invoice/:id
+ *     for a full preview + reprint page.
+ *   • PDF download logic is unchanged.
  */
 function InvoiceRow({ invoice }) {
+  const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError]             = useState('');
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-CA', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+      year: 'numeric', month: 'long', day: 'numeric',
     });
   };
 
@@ -44,7 +39,6 @@ function InvoiceRow({ invoice }) {
   const handleDownload = async () => {
     setDownloading(true);
     setError('');
-
     try {
       const items = [];
 
@@ -85,14 +79,7 @@ function InvoiceRow({ invoice }) {
         throw new Error('No PDF data returned');
       }
 
-      // downloadPdfMobile works correctly on both mobile and desktop:
-      //   • Uses hidden <a download> — no popup blocker issues
-      //   • Delays blob URL revoke by 2 s — safe for async mobile readers
-      downloadPdfMobile(
-        result.data.pdfBase64,
-        `Invoice-${invoice.number}.pdf`
-      );
-
+      downloadPdfMobile(result.data.pdfBase64, `Invoice-${invoice.number}.pdf`);
     } catch (err) {
       console.error('Download failed:', err);
       setError('Download failed. Please try again.');
@@ -104,7 +91,14 @@ function InvoiceRow({ invoice }) {
   return (
     <div className="invoice-row">
       <div className="invoice-row-main">
-        <div className="invoice-number">{invoice.number}</div>
+        {/* Clickable invoice number → /invoice/:id preview page */}
+        <button
+          className="invoice-number invoice-number-link"
+          onClick={() => navigate(`/invoice/${invoice.id}`)}
+          title="View invoice"
+        >
+          {invoice.number}
+        </button>
         <div className="invoice-date">{formatDate(invoice.date)}</div>
         <div className="invoice-amount">{formatCurrency(invoice.totals?.finalTotal)}</div>
         <div className={`invoice-status ${getStatusClass(invoice.status)}`}>

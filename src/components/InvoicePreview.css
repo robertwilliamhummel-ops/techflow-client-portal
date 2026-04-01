@@ -1,0 +1,113 @@
+/* ── InvoicePreview.css ─────────────────────────────────────────────────── */
+
+.ip-page {
+  min-height: 100vh;
+  background: var(--bg-dark, #0f0c29);
+  padding: 24px 16px 48px;
+}
+
+/* Action bar */
+.ip-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 760px;
+  margin: 0 auto 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ip-actions-right {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+.ip-btn:active { transform: scale(0.97); }
+.ip-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.ip-btn-back {
+  background: rgba(255,255,255,0.12);
+  color: #ffffff;
+}
+.ip-btn-back:hover { background: rgba(255,255,255,0.2); }
+
+.ip-btn-download {
+  background: linear-gradient(135deg, var(--primary, #667eea) 0%, var(--secondary, #764ba2) 100%);
+  color: #ffffff;
+}
+.ip-btn-download:hover:not(:disabled) { opacity: 0.88; }
+
+.ip-btn-print {
+  background: rgba(255,255,255,0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.ip-btn-print:hover { background: rgba(255,255,255,0.18); }
+
+/* Error banner */
+.ip-dl-error {
+  max-width: 760px;
+  margin: 0 auto 12px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  padding: 10px 16px;
+  color: #fca5a5;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Loading / error full-page states */
+.ip-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 16px;
+  font-size: 1rem;
+}
+.ip-loading { color: var(--primary, #667eea); }
+.ip-error   { color: #fc8181; }
+
+/* ── Print styles ────────────────────────────────────────────────────────── */
+/*
+ * Everything is hidden during print except .invoice-preview and its children.
+ * The .no-print class explicitly hides the action bar and error banners.
+ */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .invoice-preview,
+  .invoice-preview * {
+    visibility: visible;
+  }
+
+  .invoice-preview {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

@@ -1,0 +1,173 @@
+/* ── InvoiceTemplate.css ────────────────────────────────────────────────── */
+/* Used by InvoicePreview page; also safe for future PDF consistency.         */
+
+.invoice-template {
+  background: #ffffff;
+  color: #2d3748;
+  font-family: 'Inter', Arial, sans-serif;
+  padding: 40px;
+  max-width: 760px;
+  margin: 0 auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+}
+
+/* Header */
+.it-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.it-brand {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.it-logo {
+  height: 64px;
+  width: auto;
+  object-fit: contain;
+}
+
+.it-brand-text { display: flex; flex-direction: column; gap: 3px; }
+.it-company-name   { margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--primary, #667eea); }
+.it-company-tagline { margin: 0; font-size: 0.8rem; color: #718096; }
+.it-company-contact { margin: 0; font-size: 0.8rem; color: #718096; }
+
+.it-meta {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.it-meta-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+}
+
+.it-meta-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.it-meta-value { font-size: 0.9rem; color: #2d3748; font-weight: 500; }
+.it-inv-number { font-size: 1.1rem; font-weight: 700; color: var(--primary, #667eea); }
+
+/* Status badge */
+.it-status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.it-badge-paid      { background: #d1fae5; color: #065f46; }
+.it-badge-unpaid    { background: #fee2e2; color: #991b1b; }
+.it-badge-cancelled { background: #f3f4f6; color: #6b7280; }
+
+/* Divider */
+.it-divider {
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary, #667eea), var(--secondary, #764ba2));
+  border-radius: 2px;
+  margin-bottom: 24px;
+}
+
+/* Bill To */
+.it-bill-to { margin-bottom: 28px; }
+.it-section-label  { font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+                     letter-spacing: 0.07em; color: #718096; margin: 0 0 8px 0; }
+.it-customer-name   { font-size: 1rem; font-weight: 700; color: #1a202c; margin: 0 0 4px 0; }
+.it-customer-detail { font-size: 0.85rem; color: #4a5568; margin: 0 0 3px 0; }
+
+/* Table */
+.it-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 24px;
+}
+
+.it-th {
+  background: linear-gradient(135deg, var(--primary, #667eea) 0%, var(--secondary, #764ba2) 100%);
+  color: #ffffff;
+  padding: 11px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.it-th-desc   { text-align: left; }
+.it-th-qty,
+.it-th-rate,
+.it-th-amount { text-align: right; }
+
+.it-tr:nth-child(even) { background: #f7f8fc; }
+
+.it-td {
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  color: #2d3748;
+  border-bottom: 1px solid #e2e8f0;
+}
+.it-td-num { text-align: right; }
+
+/* Totals */
+.it-totals {
+  max-width: 280px;
+  margin-left: auto;
+  margin-bottom: 28px;
+}
+
+.it-total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 0.88rem;
+  color: #4a5568;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.it-total-final {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0 6px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary, #667eea);
+  border-top: 2px solid var(--primary, #667eea);
+}
+
+/* Payment info */
+.it-payment-info {
+  background: #f7f8fc;
+  border-left: 4px solid var(--primary, #667eea);
+  border-radius: 6px;
+  padding: 14px 18px;
+  font-size: 0.85rem;
+  color: #4a5568;
+  line-height: 1.7;
+}
+.it-payment-info p { margin: 0 0 4px 0; }
+.it-payment-info strong { color: #2d3748; }
+
+/* ── Print overrides ─────────────────────────────────────────────────────── */
+@media print {
+  .invoice-template {
+    box-shadow: none;
+    border-radius: 0;
+    padding: 24px;
+  }
+}

@@ -401,3 +401,19 @@
     display: none;
   }
 }
+/* ── ADD TO: src/components/InvoiceList.css ──────────────────────────────── */
+
+/* Clickable invoice number — admin list */
+.inv-number-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--primary, #667eea);
+  font-weight: 700;
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.15s;
+}
+.inv-number-link:hover { color: #a78bfa; }

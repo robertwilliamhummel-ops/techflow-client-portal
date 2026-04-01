@@ -3,32 +3,14 @@ import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../config/firebase';
 import { useInvoiceCounter } from '../hooks/useInvoiceCounter';
-import { formatDate, todayISO, roundToTwo, formatCurrency } from '../utils/formatters';
+import { formatDate, todayISO, formatCurrency } from '../utils/formatters';
 import { validateCustomer, validateCustomerEmail } from '../utils/validators';
 import { isMobileDevice, downloadPdfMobile, createPdfBlobUrl } from '../utils/pdfUtils';
 import CustomerSection from './CustomerSection';
 import ServiceCalculator from './ServiceCalculator';
 import './InvoiceForm.css';
 
-/**
- * InvoiceForm — mobile PDF fix summary
- * ─────────────────────────────────────────────────────────────────────────
- * ROOT CAUSE of mobile preview failure:
- *   handlePreview was creating a blob URL and setting it on an <iframe>.
- *   Mobile Safari cannot render PDFs inside iframes served from blob: URLs —
- *   the iframe just stays blank. Android Chrome fails silently in the same way.
- *
- * FIX — two-path strategy via isMobileDevice() from pdfUtils.js:
- *
- *   Desktop  → unchanged UX: blob URL → <iframe> renders inline in the page.
- *
- *   Mobile   → skip the iframe entirely. Call downloadPdfMobile() which uses
- *              a hidden <a download> element so the OS hands the file to its
- *              native PDF viewer (Files / Downloads app). The button label
- *              changes to "Open PDF" to match the expected mobile action.
- * ─────────────────────────────────────────────────────────────────────────
- */
-
+// ── Totals preview box (unchanged from original) ──────────────────────────────
 function TotalsBox({ calcRef, chargeHST }) {
   const [totals, setTotals] = useState({
     hourlyTotal: 0, lineItemsTotal: 0, subtotal: 0, taxAmount: 0, finalTotal: 0,
@@ -54,7 +36,7 @@ function TotalsBox({ calcRef, chargeHST }) {
   );
 }
 
-function InvoiceForm({ user }) {
+function InvoiceForm({ user, onInvoiceSent }) {
   const { invoiceNumber, consumeNumber } = useInvoiceCounter(user?.uid);
   const [invoiceDate, setInvoiceDate]   = useState(todayISO());
   const [customer, setCustomer]         = useState({});
@@ -62,7 +44,14 @@ function InvoiceForm({ user }) {
   const [toast, setToast]               = useState(null);
   const [previewing, setPreviewing]     = useState(false);
   const [sending, setSending]           = useState(false);
-  const [pdfBlobUrl, setPdfBlobUrl]     = useState(null); // desktop only
+  const [pdfBlobUrl, setPdfBlobUrl]     = useState(null);
+
+  // ── Recurring state ───────────────────────────────────────────────────────
+  const [isRecurring, setIsRecurring]   = useState(false);
+  const [recurFrequency]                = useState('monthly'); // monthly only for now
+  const [recurStartDate, setRecurStartDate] = useState(todayISO());
+  const [recurAutoSend, setRecurAutoSend]   = useState(true);
+
   const calcRef = useRef();
 
   const showToast = (message, type = 'success') => {
@@ -81,7 +70,7 @@ function InvoiceForm({ user }) {
     return items;
   };
 
-  // ── Preview ───────────────────────────────────────────────────────────────
+  // ── Preview (unchanged) ───────────────────────────────────────────────────
   const handlePreview = async () => {
     const err1 = validateCustomer(customer);
     if (err1.length) { showToast(err1[0], 'error'); return; }
@@ -89,8 +78,6 @@ function InvoiceForm({ user }) {
     if (err2.length) { showToast(err2[0], 'error'); return; }
 
     setPreviewing(true);
-
-    // Clean up any existing desktop blob URL
     if (pdfBlobUrl) { URL.revokeObjectURL(pdfBlobUrl); setPdfBlobUrl(null); }
 
     try {
@@ -106,22 +93,12 @@ function InvoiceForm({ user }) {
         total:         totals.finalTotal.toFixed(2),
       });
 
-      if (!result.data.success || !result.data.pdfBase64) {
-        throw new Error('No PDF data returned');
-      }
+      if (!result.data.success || !result.data.pdfBase64) throw new Error('No PDF data returned');
 
       if (isMobileDevice()) {
-        // ── Mobile path ──────────────────────────────────────────────────
-        // Iframes can't render blob-URL PDFs on iOS/Android.
-        // Hand off to the OS native PDF viewer via <a download>.
-        downloadPdfMobile(
-          result.data.pdfBase64,
-          `Invoice-${invoiceNumber}.pdf`
-        );
+        downloadPdfMobile(result.data.pdfBase64, `Invoice-${invoiceNumber}.pdf`);
         showToast('PDF sent to your device — check Downloads / Files.', 'info');
       } else {
-        // ── Desktop path ─────────────────────────────────────────────────
-        // Inline iframe preview — unchanged UX.
         setPdfBlobUrl(createPdfBlobUrl(result.data.pdfBase64));
       }
     } catch (err) {
@@ -131,7 +108,7 @@ function InvoiceForm({ user }) {
     }
   };
 
-  // ── Send ──────────────────────────────────────────────────────────────────
+  // ── Send (+ optional recurring setup) ────────────────────────────────────
   const handleSend = async () => {
     const err1 = validateCustomer(customer);
     if (err1.length) { showToast(err1[0], 'error'); return; }
@@ -140,22 +117,35 @@ function InvoiceForm({ user }) {
     const err2 = calcRef.current?.validate() || [];
     if (err2.length) { showToast(err2[0], 'error'); return; }
 
+    // Validate recurring fields
+    if (isRecurring && !recurStartDate) {
+      showToast('Please set a start date for the recurring invoice.', 'error');
+      return;
+    }
+
     setSending(true);
     try {
       const { hourlyServices, lineItems, totals } = calcRef.current.getData(chargeHST);
       const confirmedNumber = await consumeNumber();
 
+      // 1. Create the invoice document (always — the first invoice is created immediately)
       await addDoc(collection(db, 'invoices'), {
-        userId:   user.uid,
+        userId:    user.uid,
         customer,
-        number:   confirmedNumber,
-        date:     invoiceDate,
-        services: { hourly: hourlyServices, lineItems },
-        totals:   { subtotal: totals.subtotal, taxAmount: totals.taxAmount, finalTotal: totals.finalTotal },
-        status:   'unpaid',
+        number:    confirmedNumber,
+        date:      invoiceDate,
+        services:  { hourly: hourlyServices, lineItems },
+        totals:    {
+          subtotal:   totals.subtotal,
+          taxAmount:  totals.taxAmount,
+          finalTotal: totals.finalTotal,
+          taxRate:    totals.taxRate,
+        },
+        status:    'unpaid',
         createdAt: Timestamp.now(),
       });
 
+      // 2. Send the invoice email
       await httpsCallable(functions, 'sendInvoiceEmail')({
         customerEmail:  customer.email,
         customerName:   customer.name,
@@ -168,7 +158,40 @@ function InvoiceForm({ user }) {
         amount:         totals.finalTotal,
       });
 
-      showToast(`Invoice ${confirmedNumber} sent! Next number ready.`, 'success');
+      // 3. If recurring: save template to recurringInvoices collection
+      if (isRecurring) {
+        await addDoc(collection(db, 'recurringInvoices'), {
+          userId:    user.uid,
+          customer,                         // snapshot of customer at time of creation
+          template: {
+            services: { hourly: hourlyServices, lineItems },
+            totals: {
+              subtotal:   totals.subtotal,
+              taxAmount:  totals.taxAmount,
+              finalTotal: totals.finalTotal,
+              taxRate:    totals.taxRate,
+            },
+            chargeHST,
+          },
+          frequency:  recurFrequency,
+          startDate:  recurStartDate,
+          lastRun:    Timestamp.now(),       // first invoice just sent = first run
+          active:     true,
+          sendEmail:  recurAutoSend,
+          createdAt:  Timestamp.now(),
+        });
+        showToast(`Invoice ${confirmedNumber} sent! Recurring template saved — next invoice auto-generates monthly.`, 'success');
+      } else {
+        showToast(`Invoice ${confirmedNumber} sent! Next number ready.`, 'success');
+      }
+
+      // Reset recurring UI
+      setIsRecurring(false);
+      setRecurStartDate(todayISO());
+      setRecurAutoSend(true);
+
+      // Notify parent (AdminDashboard) to refresh stats and switch tab
+      onInvoiceSent?.();
     } catch (err) {
       showToast(`Error: ${err.message}`, 'error');
     } finally {
@@ -182,12 +205,14 @@ function InvoiceForm({ user }) {
     setCustomer({});
     setInvoiceDate(todayISO());
     setChargeHST(false);
+    setIsRecurring(false);
+    setRecurStartDate(todayISO());
+    setRecurAutoSend(true);
     calcRef.current?.reset();
     if (pdfBlobUrl) { URL.revokeObjectURL(pdfBlobUrl); setPdfBlobUrl(null); }
     showToast('Form cleared', 'info');
   };
 
-  // Preview button label differs on mobile vs desktop
   const previewLabel = isMobileDevice() ? 'Open PDF' : 'Preview PDF';
   const previewIcon  = isMobileDevice() ? 'fa-download' : 'fa-eye';
 
@@ -218,7 +243,6 @@ function InvoiceForm({ user }) {
 
         <div className="form-card">
           <div className="card-title"><i className="fas fa-file-invoice"></i> Invoice Details</div>
-
           <div className="detail-row">
             <div className="form-group">
               <label className="form-label">Invoice #</label>
@@ -236,11 +260,7 @@ function InvoiceForm({ user }) {
           </div>
 
           <label className="hst-label">
-            <input
-              type="checkbox"
-              checked={chargeHST}
-              onChange={e => setChargeHST(e.target.checked)}
-            />
+            <input type="checkbox" checked={chargeHST} onChange={e => setChargeHST(e.target.checked)} />
             Add HST (13%)
           </label>
 
@@ -251,11 +271,56 @@ function InvoiceForm({ user }) {
       {/* Services */}
       <ServiceCalculator ref={calcRef} />
 
-      {/*
-       * Desktop-only inline PDF preview.
-       * Never rendered on mobile — isMobileDevice() path uses downloadPdfMobile()
-       * instead and never sets pdfBlobUrl, so this block stays null on mobile.
-       */}
+      {/* ── Recurring invoice section ── */}
+      <div className="recurring-section">
+        <label className="recurring-toggle-label">
+          <input
+            type="checkbox"
+            checked={isRecurring}
+            onChange={e => setIsRecurring(e.target.checked)}
+          />
+          <span className="recurring-toggle-text">
+            <i className="fas fa-sync-alt"></i> Make this a recurring invoice
+          </span>
+        </label>
+
+        {isRecurring && (
+          <div className="recurring-options">
+            <div className="recurring-options-grid">
+              <div className="form-group">
+                <label className="form-label">Frequency</label>
+                {/* Monthly only — expand this select when other frequencies are needed */}
+                <select className="form-select" value={recurFrequency} disabled>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Start Date</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={recurStartDate}
+                  onChange={e => setRecurStartDate(e.target.value)}
+                />
+              </div>
+            </div>
+            <label className="hst-label recurring-autosend-label">
+              <input
+                type="checkbox"
+                checked={recurAutoSend}
+                onChange={e => setRecurAutoSend(e.target.checked)}
+              />
+              Auto-send email each month
+            </label>
+            <div className="recurring-hint">
+              <i className="fas fa-info-circle"></i>
+              The first invoice will be sent immediately. Future invoices will be created and emailed automatically each month.
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop-only inline PDF preview */}
       {pdfBlobUrl && (
         <div className="preview-section">
           <div className="preview-header">
@@ -289,7 +354,9 @@ function InvoiceForm({ user }) {
         >
           {sending
             ? <><i className="fas fa-spinner fa-spin"></i> Sending...</>
-            : <><i className="fas fa-envelope"></i> Send Invoice</>}
+            : isRecurring
+              ? <><i className="fas fa-sync-alt"></i> Send &amp; Set Recurring</>
+              : <><i className="fas fa-envelope"></i> Send Invoice</>}
         </button>
         <button
           className="btn-clear-action"

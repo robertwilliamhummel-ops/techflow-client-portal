@@ -102,3 +102,19 @@
     width: 100%;
   }
 }
+/* ── ADD TO: src/components/InvoiceRow.css ───────────────────────────────── */
+
+/* Clickable invoice number — client row */
+.invoice-number-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--primary, #667eea);
+  font-weight: 700;
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.15s;
+}
+.invoice-number-link:hover { color: #a78bfa; }

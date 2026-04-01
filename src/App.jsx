@@ -1,20 +1,21 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from './config/firebase';
 import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
 import AdminDashboard from './components/AdminDashboard';
+import InvoicePreview from './components/InvoicePreview';
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser]       = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        // Check if UID exists in admins collection
         try {
           const adminDoc = await getDoc(doc(db, 'admins', currentUser.uid));
           setIsAdmin(adminDoc.exists());
@@ -49,9 +50,25 @@ function App() {
     );
   }
 
+  // Not authenticated — show login for all routes
   if (!user) return <LoginPage />;
-  if (isAdmin) return <AdminDashboard user={user} />;
-  return <Dashboard user={user} />;
+
+  // Authenticated — use React Router.
+  // /invoice/:id is accessible to both admins and clients.
+  // Everything else falls through to the appropriate dashboard.
+  return (
+    <Routes>
+      <Route path="/invoice/:id" element={<InvoicePreview />} />
+      <Route
+        path="*"
+        element={
+          isAdmin
+            ? <AdminDashboard user={user} />
+            : <Dashboard user={user} />
+        }
+      />
+    </Routes>
+  );
 }
 
 export default App;

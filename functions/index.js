@@ -234,17 +234,19 @@ function generateQuotePDFHTML(items, customerName, quoteNumber, quoteDate, valid
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Determine whether a monthly recurring invoice is due today.
+ * Determine whether a recurring invoice is due today.
+ * Supports monthly, quarterly, and yearly frequencies.
  *
  * Rules:
  *   - If lastRun is null → run if today >= startDate
- *   - Otherwise          → run if today >= (lastRun + 1 month)
+ *   - Otherwise          → run if today >= (lastRun + frequency period)
  *
  * @param {FirebaseFirestore.Timestamp|null} lastRun
  * @param {string} startDate  YYYY-MM-DD
+ * @param {string} frequency  'monthly' | 'quarterly' | 'yearly'
  * @returns {boolean}
  */
-function isMonthlyDue(lastRun, startDate) {
+function isDue(lastRun, startDate, frequency) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -257,7 +259,9 @@ function isMonthlyDue(lastRun, startDate) {
   lastRunDate.setHours(0, 0, 0, 0);
 
   const nextRun = new Date(lastRunDate);
-  nextRun.setMonth(nextRun.getMonth() + 1);
+  if (frequency === "monthly")   nextRun.setMonth(nextRun.getMonth() + 1);
+  if (frequency === "quarterly") nextRun.setMonth(nextRun.getMonth() + 3);
+  if (frequency === "yearly")    nextRun.setFullYear(nextRun.getFullYear() + 1);
 
   return today >= nextRun;
 }
@@ -342,13 +346,7 @@ exports.runRecurringInvoices = onSchedule(
       const recurringId = docSnap.id;
 
       try {
-        // Check frequency (only monthly supported for now)
-        if (recurring.frequency !== "monthly") {
-          skipped++;
-          continue;
-        }
-
-        if (!isMonthlyDue(recurring.lastRun, recurring.startDate)) {
+        if (!isDue(recurring.lastRun, recurring.startDate, recurring.frequency)) {
           skipped++;
           continue;
         }

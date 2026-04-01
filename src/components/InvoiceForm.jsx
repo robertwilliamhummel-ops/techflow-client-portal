@@ -10,7 +10,6 @@ import CustomerSection from './CustomerSection';
 import ServiceCalculator from './ServiceCalculator';
 import './InvoiceForm.css';
 
-// ── Totals preview box (unchanged from original) ──────────────────────────────
 function TotalsBox({ calcRef, chargeHST }) {
   const [totals, setTotals] = useState({
     hourlyTotal: 0, lineItemsTotal: 0, subtotal: 0, taxAmount: 0, finalTotal: 0,
@@ -47,8 +46,8 @@ function InvoiceForm({ user, onInvoiceSent }) {
   const [pdfBlobUrl, setPdfBlobUrl]     = useState(null);
 
   // ── Recurring state ───────────────────────────────────────────────────────
-  const [isRecurring, setIsRecurring]   = useState(false);
-  const [recurFrequency]                = useState('monthly'); // monthly only for now
+  const [isRecurring, setIsRecurring]       = useState(false);
+  const [recurFrequency, setRecurFrequency] = useState('monthly'); // now unlocked
   const [recurStartDate, setRecurStartDate] = useState(todayISO());
   const [recurAutoSend, setRecurAutoSend]   = useState(true);
 
@@ -70,7 +69,7 @@ function InvoiceForm({ user, onInvoiceSent }) {
     return items;
   };
 
-  // ── Preview (unchanged) ───────────────────────────────────────────────────
+  // ── Preview ───────────────────────────────────────────────────────────────
   const handlePreview = async () => {
     const err1 = validateCustomer(customer);
     if (err1.length) { showToast(err1[0], 'error'); return; }
@@ -82,7 +81,6 @@ function InvoiceForm({ user, onInvoiceSent }) {
 
     try {
       const { hourlyServices, lineItems, totals } = calcRef.current.getData(chargeHST);
-
       const result = await httpsCallable(functions, 'previewInvoicePDF')({
         items:         buildItems(hourlyServices, lineItems),
         customerName:  customer.name,
@@ -108,7 +106,7 @@ function InvoiceForm({ user, onInvoiceSent }) {
     }
   };
 
-  // ── Send (+ optional recurring setup) ────────────────────────────────────
+  // ── Send ──────────────────────────────────────────────────────────────────
   const handleSend = async () => {
     const err1 = validateCustomer(customer);
     if (err1.length) { showToast(err1[0], 'error'); return; }
@@ -117,7 +115,6 @@ function InvoiceForm({ user, onInvoiceSent }) {
     const err2 = calcRef.current?.validate() || [];
     if (err2.length) { showToast(err2[0], 'error'); return; }
 
-    // Validate recurring fields
     if (isRecurring && !recurStartDate) {
       showToast('Please set a start date for the recurring invoice.', 'error');
       return;
@@ -128,7 +125,7 @@ function InvoiceForm({ user, onInvoiceSent }) {
       const { hourlyServices, lineItems, totals } = calcRef.current.getData(chargeHST);
       const confirmedNumber = await consumeNumber();
 
-      // 1. Create the invoice document (always — the first invoice is created immediately)
+      // 1. Create first invoice immediately
       await addDoc(collection(db, 'invoices'), {
         userId:    user.uid,
         customer,
@@ -145,7 +142,7 @@ function InvoiceForm({ user, onInvoiceSent }) {
         createdAt: Timestamp.now(),
       });
 
-      // 2. Send the invoice email
+      // 2. Send invoice email
       await httpsCallable(functions, 'sendInvoiceEmail')({
         customerEmail:  customer.email,
         customerName:   customer.name,
@@ -158,11 +155,11 @@ function InvoiceForm({ user, onInvoiceSent }) {
         amount:         totals.finalTotal,
       });
 
-      // 3. If recurring: save template to recurringInvoices collection
+      // 3. Save recurring template if enabled
       if (isRecurring) {
         await addDoc(collection(db, 'recurringInvoices'), {
-          userId:    user.uid,
-          customer,                         // snapshot of customer at time of creation
+          userId:   user.uid,
+          customer,
           template: {
             services: { hourly: hourlyServices, lineItems },
             totals: {
@@ -175,22 +172,24 @@ function InvoiceForm({ user, onInvoiceSent }) {
           },
           frequency:  recurFrequency,
           startDate:  recurStartDate,
-          lastRun:    Timestamp.now(),       // first invoice just sent = first run
+          lastRun:    Timestamp.now(),
           active:     true,
           sendEmail:  recurAutoSend,
           createdAt:  Timestamp.now(),
         });
-        showToast(`Invoice ${confirmedNumber} sent! Recurring template saved — next invoice auto-generates monthly.`, 'success');
+
+        const freqLabel = { monthly: 'monthly', quarterly: 'quarterly', yearly: 'yearly' }[recurFrequency];
+        showToast(`Invoice ${confirmedNumber} sent! Recurring template saved — next invoice auto-generates ${freqLabel}.`, 'success');
       } else {
         showToast(`Invoice ${confirmedNumber} sent! Next number ready.`, 'success');
       }
 
       // Reset recurring UI
       setIsRecurring(false);
+      setRecurFrequency('monthly');
       setRecurStartDate(todayISO());
       setRecurAutoSend(true);
 
-      // Notify parent (AdminDashboard) to refresh stats and switch tab
       onInvoiceSent?.();
     } catch (err) {
       showToast(`Error: ${err.message}`, 'error');
@@ -206,6 +205,7 @@ function InvoiceForm({ user, onInvoiceSent }) {
     setInvoiceDate(todayISO());
     setChargeHST(false);
     setIsRecurring(false);
+    setRecurFrequency('monthly');
     setRecurStartDate(todayISO());
     setRecurAutoSend(true);
     calcRef.current?.reset();
@@ -289,9 +289,14 @@ function InvoiceForm({ user, onInvoiceSent }) {
             <div className="recurring-options-grid">
               <div className="form-group">
                 <label className="form-label">Frequency</label>
-                {/* Monthly only — expand this select when other frequencies are needed */}
-                <select className="form-select" value={recurFrequency} disabled>
+                <select
+                  className="form-select"
+                  value={recurFrequency}
+                  onChange={e => setRecurFrequency(e.target.value)}
+                >
                   <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly (every 3 months)</option>
+                  <option value="yearly">Yearly</option>
                 </select>
               </div>
               <div className="form-group">
@@ -310,17 +315,17 @@ function InvoiceForm({ user, onInvoiceSent }) {
                 checked={recurAutoSend}
                 onChange={e => setRecurAutoSend(e.target.checked)}
               />
-              Auto-send email each month
+              Auto-send email each cycle
             </label>
             <div className="recurring-hint">
               <i className="fas fa-info-circle"></i>
-              The first invoice will be sent immediately. Future invoices will be created and emailed automatically each month.
+              The first invoice will be sent immediately. Future invoices will be created and emailed automatically each {recurFrequency === 'quarterly' ? 'quarter' : recurFrequency === 'yearly' ? 'year' : 'month'}.
             </div>
           </div>
         )}
       </div>
 
-      {/* Desktop-only inline PDF preview */}
+      {/* Desktop PDF preview */}
       {pdfBlobUrl && (
         <div className="preview-section">
           <div className="preview-header">

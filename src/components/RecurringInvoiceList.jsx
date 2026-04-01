@@ -1,21 +1,59 @@
 import { useState, useEffect } from 'react';
 import {
-  collection, query, where, getDocs, doc, updateDoc, deleteDoc, Timestamp
+  collection, query, where, getDocs, doc, updateDoc, deleteDoc,
+  orderBy, limit, Timestamp
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { formatCurrency } from '../utils/formatters';
 import './RecurringInvoiceList.css';
 
 /**
- * RecurringInvoiceList — admin tab for the `recurringInvoices` Firestore collection.
- * - Pause resets the clock on resume (fresh month/quarter/year starts from today)
- * - Supports monthly, quarterly, yearly frequencies
+ * RecurringInvoiceList — admin tab for the `recurringInvoices` collection.
+ *
+ * Features:
+ *   - Monthly / quarterly / yearly frequency support
+ *   - Pause resets clock on resume (fresh billing period from today)
+ *   - Latest Invoice column — most recent invoice linked to this template
+ *   - Started column    — when the recurring template began
+ *   - Next Invoice column — calculated next fire date
  */
+
+// ── Date helpers ──────────────────────────────────────────────────────────────
+
+function getNextRunDate(lastRun, startDate, frequency) {
+  if (!lastRun) {
+    return startDate ? new Date(startDate + 'T00:00:00') : null;
+  }
+  const base = lastRun.toDate ? lastRun.toDate() : new Date(lastRun);
+  const next = new Date(base);
+  if (frequency === 'monthly')   next.setMonth(next.getMonth() + 1);
+  if (frequency === 'quarterly') next.setMonth(next.getMonth() + 3);
+  if (frequency === 'yearly')    next.setFullYear(next.getFullYear() + 1);
+  return next;
+}
+
+function formatShortDate(date) {
+  if (!date) return '—';
+  const d = date.toDate ? date.toDate() : (date instanceof Date ? date : new Date(date));
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function formatStartDate(startDate) {
+  if (!startDate) return '—';
+  const d = new Date(startDate + 'T00:00:00');
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 function RecurringInvoiceList({ user }) {
-  const [records, setRecords]       = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState('');
-  const [updatingId, setUpdatingId] = useState(null);
+  const [records, setRecords]               = useState([]);
+  const [loading, setLoading]               = useState(true);
+  const [error, setError]                   = useState('');
+  const [updatingId, setUpdatingId]         = useState(null);
+  const [latestInvoices, setLatestInvoices] = useState({});
 
   useEffect(() => {
     fetchRecurring();
@@ -38,6 +76,7 @@ function RecurringInvoiceList({ user }) {
         return tb - ta;
       });
       setRecords(list);
+      await fetchLatestInvoices(list);
     } catch (err) {
       console.error('Error fetching recurring invoices:', err);
       setError('Could not load recurring invoices. Please refresh.');
@@ -46,14 +85,57 @@ function RecurringInvoiceList({ user }) {
     }
   };
 
+  // ── Query most recent invoice linked to each recurring template ─────────────
+  const fetchLatestInvoices = async (list) => {
+    if (!list.length) return;
+    const results = {};
+
+    await Promise.all(
+      list.map(async (record) => {
+        try {
+          // Scheduler-created invoices have a recurringId field
+          const q = query(
+            collection(db, 'invoices'),
+            where('recurringId', '==', record.id),
+            orderBy('createdAt', 'desc'),
+            limit(1)
+          );
+          const snap = await getDocs(q);
+
+          if (!snap.empty) {
+            results[record.id] = snap.docs[0].data().number || '—';
+          } else if (record.customer?.email) {
+            // Fallback: latest invoice for this customer (catches first manual send)
+            const fallbackQ = query(
+              collection(db, 'invoices'),
+              where('userId', '==', user.uid),
+              where('customer.email', '==', record.customer.email),
+              orderBy('createdAt', 'desc'),
+              limit(1)
+            );
+            const fallbackSnap = await getDocs(fallbackQ);
+            results[record.id] = fallbackSnap.empty
+              ? '—'
+              : fallbackSnap.docs[0].data().number || '—';
+          } else {
+            results[record.id] = '—';
+          }
+        } catch {
+          results[record.id] = '—';
+        }
+      })
+    );
+
+    setLatestInvoices(results);
+  };
+
+  // ── Pause / Resume ──────────────────────────────────────────────────────────
   const toggleActive = async (record) => {
     setUpdatingId(record.id);
     const isResuming = !record.active;
     try {
       await updateDoc(doc(db, 'recurringInvoices', record.id), {
         active: isResuming,
-        // When resuming: reset lastRun to now so client gets a fresh billing period
-        // before the next invoice fires. Prevents immediate fire on unpause.
         ...(isResuming && { lastRun: Timestamp.now() }),
       });
       setRecords(prev =>
@@ -71,6 +153,7 @@ function RecurringInvoiceList({ user }) {
     }
   };
 
+  // ── Delete ──────────────────────────────────────────────────────────────────
   const handleDelete = async (record) => {
     if (!confirm(`Delete recurring invoice for "${record.customer?.name}"? This will not affect already-created invoices.`)) return;
     setUpdatingId(record.id);
@@ -83,14 +166,6 @@ function RecurringInvoiceList({ user }) {
     } finally {
       setUpdatingId(null);
     }
-  };
-
-  const formatLastRun = (lastRun) => {
-    if (!lastRun) return 'Never';
-    const date = lastRun.toDate ? lastRun.toDate() : new Date(lastRun);
-    return date.toLocaleDateString('en-CA', {
-      year: 'numeric', month: 'short', day: 'numeric'
-    });
   };
 
   const formatFrequency = (freq) => {
@@ -155,68 +230,104 @@ function RecurringInvoiceList({ user }) {
           </p>
         </div>
       ) : (
-        <div className="ril-table">
-          <div className="ril-thead">
-            <span>Customer</span>
-            <span>Frequency</span>
-            <span>Total / Invoice</span>
-            <span>Start Date</span>
-            <span>Last Run</span>
-            <span>Status</span>
-            <span>Actions</span>
-          </div>
+        /* Scroll wrapper — table stays readable on any screen width */
+        <div className="ril-table-wrap">
+          <div className="ril-table">
 
-          {records.map(r => (
-            <div key={r.id} className={`ril-row ${r.active ? '' : 'ril-row-paused'}`}>
-              <div className="ril-col ril-customer">
-                <div className="ril-customer-name">{r.customer?.name || '—'}</div>
-                {r.customer?.company && (
-                  <div className="ril-customer-company">{r.customer.company}</div>
-                )}
-              </div>
-              <div className="ril-col ril-freq">
-                <i className="fas fa-redo"></i>
-                {formatFrequency(r.frequency)}
-              </div>
-              <div className="ril-col ril-amount">
-                {formatCurrency(r.template?.totals?.finalTotal)}
-              </div>
-              <div className="ril-col ril-date">
-                {r.startDate || '—'}
-              </div>
-              <div className="ril-col ril-lastrun">
-                {formatLastRun(r.lastRun)}
-              </div>
-              <div className="ril-col">
-                <span className={`ril-badge ${r.active ? 'ril-badge-active' : 'ril-badge-paused'}`}>
-                  {r.active ? 'Active' : 'Paused'}
-                </span>
-              </div>
-              <div className="ril-col ril-actions">
-                <button
-                  className={`ril-btn ${r.active ? 'ril-btn-pause' : 'ril-btn-resume'}`}
-                  onClick={() => toggleActive(r)}
-                  disabled={updatingId === r.id}
-                  title={r.active ? 'Pause — resume will start a fresh billing period' : 'Resume — fresh billing period starts today'}
-                >
-                  {updatingId === r.id
-                    ? <i className="fas fa-spinner fa-spin"></i>
-                    : r.active
-                      ? <><i className="fas fa-pause"></i> Pause</>
-                      : <><i className="fas fa-play"></i> Resume</>
-                  }
-                </button>
-                <button
-                  className="ril-btn ril-btn-delete"
-                  onClick={() => handleDelete(r)}
-                  disabled={updatingId === r.id}
-                  title="Delete recurring template"
-                >
-                  <i className="fas fa-trash"></i>
-                </button>
-              </div>
+            <div className="ril-thead">
+              <span>Customer</span>
+              <span>Frequency</span>
+              <span>Amount</span>
+              <span>Latest Invoice</span>
+              <span>Started</span>
+              <span>Next Invoice</span>
+              <span>Status</span>
+              <span>Actions</span>
             </div>
-          ))}
+
+            {records.map(r => {
+              const nextDate = getNextRunDate(r.lastRun, r.startDate, r.frequency);
+              return (
+                <div key={r.id} className={`ril-row ${r.active ? '' : 'ril-row-paused'}`}>
+
+                  {/* Customer */}
+                  <div className="ril-col ril-customer">
+                    <div className="ril-customer-name">{r.customer?.name || '—'}</div>
+                    {r.customer?.company && (
+                      <div className="ril-customer-company">{r.customer.company}</div>
+                    )}
+                  </div>
+
+                  {/* Frequency */}
+                  <div className="ril-col ril-freq">
+                    <i className="fas fa-redo"></i>
+                    {formatFrequency(r.frequency)}
+                  </div>
+
+                  {/* Amount */}
+                  <div className="ril-col ril-amount">
+                    {formatCurrency(r.template?.totals?.finalTotal)}
+                  </div>
+
+                  {/* Latest Invoice */}
+                  <div className="ril-col ril-latest-inv">
+                    {latestInvoices[r.id] && latestInvoices[r.id] !== '—'
+                      ? <span className="ril-inv-number">{latestInvoices[r.id]}</span>
+                      : <span className="ril-muted-text">—</span>
+                    }
+                  </div>
+
+                  {/* Started */}
+                  <div className="ril-col ril-started">
+                    <span className="ril-date-text">{formatStartDate(r.startDate)}</span>
+                  </div>
+
+                  {/* Next Invoice */}
+                  <div className="ril-col ril-next">
+                    {r.active
+                      ? <span className="ril-next-date">{formatShortDate(nextDate)}</span>
+                      : <span className="ril-muted-text">Paused</span>
+                    }
+                  </div>
+
+                  {/* Status badge */}
+                  <div className="ril-col">
+                    <span className={`ril-badge ${r.active ? 'ril-badge-active' : 'ril-badge-paused'}`}>
+                      {r.active ? 'Active' : 'Paused'}
+                    </span>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="ril-col ril-actions">
+                    <button
+                      className={`ril-btn ${r.active ? 'ril-btn-pause' : 'ril-btn-resume'}`}
+                      onClick={() => toggleActive(r)}
+                      disabled={updatingId === r.id}
+                      title={r.active
+                        ? 'Pause — resume will start a fresh billing period'
+                        : 'Resume — fresh billing period starts today'}
+                    >
+                      {updatingId === r.id
+                        ? <i className="fas fa-spinner fa-spin"></i>
+                        : r.active
+                          ? <><i className="fas fa-pause"></i> Pause</>
+                          : <><i className="fas fa-play"></i> Resume</>
+                      }
+                    </button>
+                    <button
+                      className="ril-btn ril-btn-delete"
+                      onClick={() => handleDelete(r)}
+                      disabled={updatingId === r.id}
+                      title="Delete recurring template"
+                    >
+                      <i className="fas fa-trash"></i>
+                    </button>
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -225,6 +336,7 @@ function RecurringInvoiceList({ user }) {
           <i className="fas fa-sync-alt"></i> Refresh
         </button>
       </div>
+
     </div>
   );
 }

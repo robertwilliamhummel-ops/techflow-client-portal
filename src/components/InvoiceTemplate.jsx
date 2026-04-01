@@ -6,6 +6,9 @@ import './InvoiceTemplate.css';
  * InvoiceTemplate — pure display component.
  * Used by InvoicePreview (view/print/download page).
  * Receives a full invoice document object as its only prop.
+ *
+ * Mobile fix: table is wrapped in .it-table-wrap for horizontal scroll
+ * so it never breaks the viewport width.
  */
 function InvoiceTemplate({ invoice }) {
   if (!invoice) return null;
@@ -29,6 +32,7 @@ function InvoiceTemplate({ invoice }) {
 
   return (
     <div className="invoice-template">
+
       {/* ── Header ── */}
       <div className="it-header">
         <div className="it-brand">
@@ -70,35 +74,41 @@ function InvoiceTemplate({ invoice }) {
         {customer?.email    && <p className="it-customer-detail">{customer.email}</p>}
       </div>
 
-      {/* ── Services table ── */}
-      <table className="it-table">
-        <thead>
-          <tr>
-            <th className="it-th it-th-desc">Description</th>
-            <th className="it-th it-th-qty">Qty / Hrs</th>
-            <th className="it-th it-th-rate">Rate</th>
-            <th className="it-th it-th-amount">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {hourlyServices.map((s, i) => (
-            <tr key={`h-${i}`} className="it-tr">
-              <td className="it-td">{s.description}</td>
-              <td className="it-td it-td-num">{s.hours}</td>
-              <td className="it-td it-td-num">{formatCurrency(s.rate)}/hr</td>
-              <td className="it-td it-td-num">{formatCurrency(s.total)}</td>
+      {/*
+       * Table wrapped in a scroll container so it never overflows the
+       * viewport on narrow mobile screens. The table itself has a min-width
+       * so columns don't collapse to unreadable widths.
+       */}
+      <div className="it-table-wrap">
+        <table className="it-table">
+          <thead>
+            <tr>
+              <th className="it-th it-th-desc">Description</th>
+              <th className="it-th it-th-qty">Qty / Hrs</th>
+              <th className="it-th it-th-rate">Rate</th>
+              <th className="it-th it-th-amount">Amount</th>
             </tr>
-          ))}
-          {lineItems.map((item, i) => (
-            <tr key={`l-${i}`} className="it-tr">
-              <td className="it-td">{item.description}</td>
-              <td className="it-td it-td-num">{item.quantity}</td>
-              <td className="it-td it-td-num">{formatCurrency(item.price)}</td>
-              <td className="it-td it-td-num">{formatCurrency(item.total)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {hourlyServices.map((s, i) => (
+              <tr key={`h-${i}`} className="it-tr">
+                <td className="it-td">{s.description}</td>
+                <td className="it-td it-td-num">{s.hours}</td>
+                <td className="it-td it-td-num">{formatCurrency(s.rate)}/hr</td>
+                <td className="it-td it-td-num">{formatCurrency(s.total)}</td>
+              </tr>
+            ))}
+            {lineItems.map((item, i) => (
+              <tr key={`l-${i}`} className="it-tr">
+                <td className="it-td">{item.description}</td>
+                <td className="it-td it-td-num">{item.quantity}</td>
+                <td className="it-td it-td-num">{formatCurrency(item.price)}</td>
+                <td className="it-td it-td-num">{formatCurrency(item.total)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {/* ── Totals ── */}
       <div className="it-totals">
@@ -127,6 +137,7 @@ function InvoiceTemplate({ invoice }) {
           {' '}· Questions? {clientConfig.companyPhone}
         </p>
       </div>
+
     </div>
   );
 }

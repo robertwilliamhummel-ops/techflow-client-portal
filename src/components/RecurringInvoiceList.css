@@ -48,13 +48,25 @@
 }
 .ril-info-banner i { color: var(--primary, #667eea); margin-top: 2px; flex-shrink: 0; }
 
+/* ── Table scroll wrapper — enables horizontal scroll on mobile ── */
+.ril-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Table */
-.ril-table { display: flex; flex-direction: column; gap: 4px; }
+.ril-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 860px; /* prevents columns from collapsing on small screens */
+}
 
 .ril-thead {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1.4fr;
-  gap: 12px;
+  grid-template-columns: 2fr 1fr 1fr 1.2fr 1fr 1.1fr 1fr 1.4fr;
+  gap: 10px;
   padding: 10px 16px;
   font-size: 0.72rem;
   font-weight: 700;
@@ -66,8 +78,8 @@
 
 .ril-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1.4fr;
-  gap: 12px;
+  grid-template-columns: 2fr 1fr 1fr 1.2fr 1fr 1.1fr 1fr 1.4fr;
+  gap: 10px;
   align-items: center;
   padding: 14px 16px;
   background: var(--bg-card, rgba(255,255,255,0.05));
@@ -80,9 +92,11 @@
 
 .ril-col { font-size: 0.88rem; color: rgba(255,255,255,0.9); }
 
+/* Customer */
 .ril-customer-name    { font-weight: 600; }
 .ril-customer-company { font-size: 0.78rem; color: rgba(255,255,255,0.5); margin-top: 2px; }
 
+/* Frequency */
 .ril-freq {
   display: flex;
   align-items: center;
@@ -93,7 +107,40 @@
 }
 .ril-freq i { color: var(--primary, #667eea); }
 
+/* Amount */
 .ril-amount { font-weight: 600; color: #48c78e; }
+
+/* Latest Invoice number */
+.ril-inv-number {
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--primary, #667eea);
+  background: rgba(102,126,234,0.12);
+  border: 1px solid rgba(102,126,234,0.25);
+  border-radius: 5px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+
+/* Date text */
+.ril-date-text {
+  font-size: 0.83rem;
+  color: rgba(255,255,255,0.7);
+}
+
+/* Next Invoice date */
+.ril-next-date {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: #fbbf24;
+}
+
+/* Muted placeholder */
+.ril-muted-text {
+  color: rgba(255,255,255,0.3);
+  font-size: 0.85rem;
+}
 
 /* Status badges */
 .ril-badge {
@@ -122,6 +169,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.2s;
+  white-space: nowrap;
 }
 .ril-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -177,26 +225,3 @@
   transition: background 0.2s;
 }
 .ril-refresh-btn:hover { background: rgba(255,255,255,0.12); }
-
-/* Responsive */
-@media (max-width: 900px) {
-  .ril-thead,
-  .ril-row {
-    grid-template-columns: 1.5fr 1fr 1fr 1fr;
-  }
-  /* Hide less critical columns on mobile */
-  .ril-thead span:nth-child(4),
-  .ril-thead span:nth-child(5),
-  .ril-row .ril-col:nth-child(4),
-  .ril-row .ril-col:nth-child(5) {
-    display: none;
-  }
-}
-
-@media (max-width: 600px) {
-  .ril-thead { display: none; }
-  .ril-row {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-}

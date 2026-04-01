@@ -12,7 +12,7 @@
   box-shadow: 0 4px 24px rgba(0,0,0,0.18);
 }
 
-/* Header */
+/* ── Header ──────────────────────────────────────────────────────────────── */
 .it-header {
   display: flex;
   justify-content: space-between;
@@ -34,7 +34,7 @@
 }
 
 .it-brand-text { display: flex; flex-direction: column; gap: 3px; }
-.it-company-name   { margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--primary, #667eea); }
+.it-company-name    { margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--primary, #667eea); }
 .it-company-tagline { margin: 0; font-size: 0.8rem; color: #718096; }
 .it-company-contact { margin: 0; font-size: 0.8rem; color: #718096; }
 
@@ -43,7 +43,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-width: 200px;
+  min-width: 180px;
 }
 
 .it-meta-row {
@@ -88,16 +88,23 @@
 
 /* Bill To */
 .it-bill-to { margin-bottom: 28px; }
-.it-section-label  { font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-                     letter-spacing: 0.07em; color: #718096; margin: 0 0 8px 0; }
+.it-section-label   { font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+                      letter-spacing: 0.07em; color: #718096; margin: 0 0 8px 0; }
 .it-customer-name   { font-size: 1rem; font-weight: 700; color: #1a202c; margin: 0 0 4px 0; }
 .it-customer-detail { font-size: 0.85rem; color: #4a5568; margin: 0 0 3px 0; }
 
-/* Table */
+/* Table — scrollable on mobile */
+.it-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 24px;
+}
+
 .it-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 24px;
+  min-width: 420px; /* prevents table columns collapsing too much */
 }
 
 .it-th {
@@ -122,7 +129,7 @@
   color: #2d3748;
   border-bottom: 1px solid #e2e8f0;
 }
-.it-td-num { text-align: right; }
+.it-td-num { text-align: right; white-space: nowrap; }
 
 /* Totals */
 .it-totals {
@@ -163,11 +170,81 @@
 .it-payment-info p { margin: 0 0 4px 0; }
 .it-payment-info strong { color: #2d3748; }
 
+/* ── Mobile responsive ───────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .invoice-template {
+    padding: 20px 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  }
+
+  /* Stack brand and meta vertically */
+  .it-header {
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  /* Meta left-aligned on mobile */
+  .it-meta {
+    text-align: left;
+    min-width: unset;
+    width: 100%;
+  }
+
+  .it-meta-row {
+    justify-content: flex-start;
+  }
+
+  /* Smaller logo */
+  .it-logo {
+    height: 44px;
+  }
+
+  .it-company-name { font-size: 1rem; }
+
+  /* Table scrolls horizontally — label hints at it */
+  .it-table-wrap::after {
+    content: '';
+    display: block;
+  }
+
+  /* Reduce table cell padding on mobile */
+  .it-td,
+  .it-th {
+    padding: 8px 10px;
+    font-size: 0.78rem;
+  }
+
+  /* Totals full width on mobile */
+  .it-totals {
+    max-width: 100%;
+  }
+
+  .it-payment-info {
+    font-size: 0.8rem;
+    padding: 12px 14px;
+  }
+}
+
+@media (max-width: 400px) {
+  .invoice-template {
+    padding: 16px 12px;
+  }
+
+  .it-td,
+  .it-th {
+    padding: 6px 8px;
+    font-size: 0.72rem;
+  }
+}
+
 /* ── Print overrides ─────────────────────────────────────────────────────── */
 @media print {
   .invoice-template {
     box-shadow: none;
     border-radius: 0;
     padding: 24px;
+    max-width: 100%;
   }
 }

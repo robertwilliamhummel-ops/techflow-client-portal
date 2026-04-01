@@ -417,3 +417,58 @@
   transition: color 0.15s;
 }
 .inv-number-link:hover { color: #a78bfa; }
+/* ══════════════════════════════════════════════════════════════════════════
+   APPEND THIS ENTIRE BLOCK to the bottom of src/components/InvoiceList.css
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Mobile sub-tab bar: All Invoices | Recurring ────────────────────────── */
+/* Hidden on desktop — the desktop nav "Recurring" tab handles that view.     */
+.il-subtabs {
+  display: none; /* hidden by default (desktop) */
+}
+
+@media (max-width: 767px) {
+  .il-subtabs {
+    display: flex;
+    gap: 0;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .il-subtab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 9px 12px;
+    background: none;
+    border: none;
+    border-radius: 7px;
+    color: rgba(255,255,255,0.55);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+    white-space: nowrap;
+  }
+
+  .il-subtab i {
+    font-size: 0.8rem;
+  }
+
+  .il-subtab--active {
+    background: linear-gradient(135deg, var(--primary, #667eea) 0%, var(--secondary, #764ba2) 100%);
+    color: #ffffff;
+    font-weight: 600;
+  }
+
+  .il-subtab:not(.il-subtab--active):hover {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.85);
+  }
+}

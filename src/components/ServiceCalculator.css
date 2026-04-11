@@ -71,12 +71,11 @@
   border-radius: 10px;
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin: 0;
-}
+/* .form-group base layout is defined in CustomerSection.css.
+   This file previously redeclared it with `margin: 0` unscoped, which
+   leaked globally and wiped the between-group spacing in other cards.
+   Scoped zero-margin overrides (e.g. .notes-row .form-group above) are
+   intentional and stay. */
 
 /* Line item row: align delete with inputs */
 .remove-col {

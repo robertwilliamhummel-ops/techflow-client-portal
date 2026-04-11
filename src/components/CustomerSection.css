@@ -37,13 +37,24 @@
 .cs-toast-success { background: rgba(72,199,142,0.1); border: 1px solid rgba(72,199,142,0.2); color: #48c78e; }
 .cs-toast-error   { background: rgba(241,70,104,0.1); border: 1px solid rgba(241,70,104,0.2); color: #f14668; }
 
+/* Base: layout only — no vertical margin.
+   Margin is applied in a scoped rule below so that ServiceCalculator and
+   other components with their own .form-group layouts can't leak a
+   `margin: 0` that wipes this out (the original bug). */
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  margin-bottom: 18px;
 }
-.form-group:last-of-type { margin-bottom: 0; }
+
+/* Solo form-groups that are direct children of a form-card get breathing
+   room between them. Form-groups nested inside grids (.detail-row,
+   .cs-two-col, .recurring-options-grid) are NOT direct children, so their
+   spacing comes from the grid gap.
+   Note: no `:last-of-type { margin-bottom: 0 }` override here — the last
+   solo form-group (Customer Address, Quote Valid Until) still wants
+   breathing room before whatever follows (action buttons, HST checkbox). */
+.form-card > .form-group { margin-bottom: 18px; }
 
 .form-label {
   font-size: 12px;

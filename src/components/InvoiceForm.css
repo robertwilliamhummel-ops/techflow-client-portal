@@ -86,6 +86,16 @@
   gap: 14px;
 }
 
+/* Restore between-form-group spacing for solo form-groups in CustomerSection.
+   ServiceCalculator.css's unscoped `.form-group { margin: 0 }` wipes the
+   margin-bottom that CustomerSection.css declares, leaving Customer card
+   labels flush against the previous input. This rule uses `>` so it only
+   hits direct children of a .form-card (Name/Company/Address), not
+   form-groups nested inside the .detail-row grid. */
+.invoice-form .form-card > .form-group {
+  margin-bottom: 18px;
+}
+
 .form-label {
   font-size: 12px;
   line-height: 1;

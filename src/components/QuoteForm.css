@@ -1,6 +1,15 @@
 /* QuoteForm.css — base form + toast styles shared with invoices */
 @import './InvoiceForm.css';
 
+/* Solo form-groups that are direct children of a form-card (e.g. Valid Until
+   on the Quote form) need explicit bottom spacing. Form-groups inside a
+   detail-row grid get their vertical rhythm from the row's margin-bottom;
+   standalone ones like Valid Until had none, causing the HST checkbox below
+   to sit flush against the input and appear clipped. */
+.quote-form .form-card > .form-group {
+  margin-bottom: 18px;
+}
+
 .quote-form .quote-notice {
   background: rgba(102, 126, 234, 0.08);
   border: 1px solid rgba(102, 126, 234, 0.25);

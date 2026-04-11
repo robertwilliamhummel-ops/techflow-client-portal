@@ -287,6 +287,13 @@
   cursor: not-allowed;
 }
 
+/* Dark-bg dropdown options — matches the app's dark theme so the open
+   menu doesn't fall back to the OS default white. */
+.status-select option {
+  background: #1a1a2e;
+  color: #fff;
+}
+
 /* STATES */
 .table-state {
   padding: 3rem;

@@ -331,6 +331,15 @@
   flex-shrink: 0;
 }
 
+/* Defensive dark-bg option rule — CustomerSection.css and ServiceCalculator.css
+   already define this for .form-select, but duplicating here so InvoiceForm's
+   own .form-select (e.g. recurring frequency) doesn't depend on sibling CSS
+   load order. */
+.form-select option {
+  background: #1a1a2e;
+  color: #fff;
+}
+
 @media (max-width: 600px) {
   .recurring-options-grid {
     grid-template-columns: 1fr;

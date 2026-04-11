@@ -204,6 +204,13 @@
   border-color: var(--primary, #667eea);
 }
 
+/* Dark-bg dropdown options — matches the app's dark theme so the open
+   menu doesn't fall back to the OS default white. */
+.sort-select option {
+  background: #1a1a2e;
+  color: #fff;
+}
+
 /* ── Responsive ─────────────────────────────────────────── */
 @media (max-width: 900px) {
   .quotes-table-header,

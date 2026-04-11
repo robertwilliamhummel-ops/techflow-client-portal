@@ -93,7 +93,8 @@
   transition: border-color 0.2s;
 }
 .form-select:focus { border-color: rgba(102,126,234,0.5); }
-.form-select option { background: #1a1a2e; color: #fff; }
+.form-select option,
+.form-select optgroup { background: #1a1a2e; color: #fff; }
 
 .cs-two-col {
   display: grid;

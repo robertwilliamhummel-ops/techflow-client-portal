@@ -5,16 +5,9 @@
   padding: 28px 28px 24px;
 }
 
-.card-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.8);
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.card-title i { color: #667eea; }
+/* Shared card primitives (.form-card, .card-title, .form-label, .form-input,
+   .form-select, .form-group) all live in CustomerSection.css — the first
+   file in the CSS import chain. Only ServiceCalculator-specific classes below. */
 
 .services-sublabel {
   font-size: 11px;
@@ -84,53 +77,12 @@
   justify-content: flex-end;
 }
 
-.form-label {
-  font-size: 12px;
-  line-height: 1;
-  color: rgba(255,255,255,0.7);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  white-space: nowrap;
-}
-
 .optional {
   text-transform: none;
   font-size: 10px;
   letter-spacing: 0;
   color: rgba(255,255,255,0.2);
 }
-
-.form-input {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 7px;
-  color: #fff;
-  padding: 9px 12px;
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  width: 100%;
-  transition: border-color 0.2s;
-}
-.form-input:focus { border-color: rgba(102,126,234,0.5); }
-.form-input::placeholder { color: rgba(255,255,255,0.2); }
-
-.form-select {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 7px;
-  color: rgba(255,255,255,0.7);
-  padding: 9px 12px;
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  width: 100%;
-  cursor: pointer;
-  transition: border-color 0.2s;
-}
-.form-select:focus { border-color: rgba(102,126,234,0.5); }
-.form-select option,
-.form-select optgroup { background: #1a1a2e; color: #fff; }
 
 .btn-remove {
   background: rgba(241,70,104,0.1);

@@ -53,24 +53,9 @@
   gap: 24px;
 }
 
-/* SHARED CARD */
-.form-card {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 12px;
-  padding: 28px;
-}
-
-.card-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.8);
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.card-title i { color: #667eea; }
+/* Shared card primitives (.form-card, .card-title, .form-label, .form-input,
+   .form-select, .form-group) all live in CustomerSection.css — the first
+   file in the CSS import chain. Only InvoiceForm-specific classes below. */
 
 /* INVOICE DETAILS */
 .detail-row {
@@ -79,32 +64,6 @@
   gap: 16px;
   margin-bottom: 18px;
 }
-
-/* .form-group base layout and .form-card > .form-group margin scoping
-   both live in CustomerSection.css (the first CSS file in the import
-   chain). Nothing to redeclare here. */
-
-.form-label {
-  font-size: 12px;
-  line-height: 1;
-  color: rgba(255,255,255,0.7);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-}
-
-.form-input {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 7px;
-  color: #fff;
-  padding: 9px 12px;
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  width: 100%;
-  transition: border-color 0.2s;
-}
-.form-input:focus { border-color: rgba(102,126,234,0.5); }
 
 .inv-num-display {
   background: rgba(102,126,234,0.08);
@@ -328,15 +287,6 @@
   color: var(--primary, #667eea);
   margin-top: 1px;
   flex-shrink: 0;
-}
-
-/* Defensive dark-bg option rule — CustomerSection.css and ServiceCalculator.css
-   already define this for .form-select, but duplicating here so InvoiceForm's
-   own .form-select (e.g. recurring frequency) doesn't depend on sibling CSS
-   load order. */
-.form-select option {
-  background: #1a1a2e;
-  color: #fff;
 }
 
 @media (max-width: 600px) {

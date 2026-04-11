@@ -74,7 +74,7 @@
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   margin: 0;
 }
 
@@ -87,6 +87,7 @@
 
 .form-label {
   font-size: 12px;
+  line-height: 1;
   color: rgba(255,255,255,0.7);
   text-transform: uppercase;
   letter-spacing: 0.8px;

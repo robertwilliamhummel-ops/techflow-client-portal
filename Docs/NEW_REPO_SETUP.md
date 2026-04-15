@@ -4,6 +4,98 @@
 
 ---
 
+## File Location Map — READ THIS FIRST
+
+Three different types of files live in three different places. Mixing them up causes confusion. Here is the complete map.
+
+### The three file categories
+
+| Category | Example files | Lives at | In git? | Visible in File Explorer? | Who can see it |
+|---|---|---|---|---|---|
+| **Project rules** | `CLAUDE.md` | Repo root | ✅ YES | ✅ Visible | Anyone who clones the repo |
+| **Blueprint docs** | `REBUILD_PLAN.md`, `REBUILD_PLAN_DEFERRED.md`, `NEW_REPO_SETUP.md` | Repo's `Docs/` folder | ✅ YES | ✅ Visible | Anyone who clones the repo |
+| **Personal memory** | `MEMORY.md`, `user_workflow_stack.md` | `C:\Users\Reggie\.claude\projects\<repo-folder-name>\memory\` | ❌ NO | ⚠️ Hidden folder | Only you, on this machine |
+
+### Visual layout after setup
+
+**Inside the new repo** (e.g. `C:\Users\Reggie\techflow-saas\`):
+
+```
+techflow-saas\
+├── CLAUDE.md                       ← Project rules (Step 3). Visible. In git.
+├── Docs\
+│   ├── REBUILD_PLAN.md             ← The blueprint. Visible. In git.
+│   ├── REBUILD_PLAN_DEFERRED.md    ← Audit log. Visible. In git.
+│   └── NEW_REPO_SETUP.md           ← This file. Visible. In git.
+├── .claude\                        ← Hidden. Local Claude Code settings.
+│   └── settings.local.json         ← NOT in git. Machine-specific only.
+└── (other project files as Phase 1 scaffolds them)
+```
+
+**Outside the repo, in your user home** (where memory actually lives):
+
+```
+C:\Users\Reggie\.claude\                                        ← Hidden folder
+└── projects\
+    └── techflow-saas\                                          ← Named after your repo folder
+        └── memory\
+            ├── MEMORY.md                                       ← Index. Auto-loaded every session.
+            └── user_workflow_stack.md                          ← Your profile. Loaded when relevant.
+```
+
+### Why each file is where it is
+
+**`CLAUDE.md` → repo root:**
+Project rules need to travel with the code. If you clone this repo on another machine, `CLAUDE.md` comes with it. Any AI reading the repo picks up the rules automatically.
+
+**Blueprint docs → `Docs/` folder:**
+Same reason. The blueprint is part of the project. Keeping it in `Docs/` keeps the repo root clean and groups all documentation together.
+
+**Memory files → user home, outside the repo:**
+Memory is *personal context about you*, not about the project. It should never go in git — other people cloning the repo shouldn't see your business model, your workflow preferences, or your background. Keeping it in `C:\Users\Reggie\.claude\` means it's tied to your machine and your user account, not the project.
+
+### How to actually find each file in File Explorer
+
+**Finding `CLAUDE.md`:**
+Open File Explorer → navigate to the repo folder → it's right there at the top level. Regular visible file.
+
+**Finding blueprint docs:**
+Open File Explorer → navigate to the repo folder → open `Docs/` → visible files.
+
+**Finding memory files (the tricky one):**
+File Explorer hides folders that start with `.` by default. Two ways in:
+
+1. **Easiest:** Paste this directly into the File Explorer address bar and hit Enter:
+   ```
+   C:\Users\Reggie\.claude\projects\
+   ```
+   You'll see all your project memory folders. Open the one matching your repo name, then `memory\`.
+
+2. **Show hidden folders:** File Explorer → View tab → check "Hidden items" → `.claude` becomes visible under `C:\Users\Reggie\`.
+
+**Note:** The "Protected operating system files" toggle is a SEPARATE Windows setting. You do NOT need to enable that. `.claude` is a regular hidden folder, not an OS-protected file.
+
+### Two different `.claude` folders — don't confuse them
+
+There are **two** folders named `.claude` on your machine, and they do different things:
+
+| Folder | Path | What's in it | Purpose |
+|---|---|---|---|
+| **Repo-level** | `<repo>\.claude\` | `settings.local.json` | Per-project Claude Code settings (permissions, etc.) |
+| **User-level** | `C:\Users\Reggie\.claude\` | `projects\<repo-name>\memory\*.md` | Your personal memory across all repos |
+
+The repo-level one is tiny and usually ignored. The user-level one holds all your memory files. When I say "memory folder," I always mean the user-level one.
+
+### Quick reference: "Where does X live?"
+
+- "Where are my memory files?" → `C:\Users\Reggie\.claude\projects\<repo-folder>\memory\`
+- "Where is CLAUDE.md?" → Repo root (e.g. `C:\Users\Reggie\techflow-saas\CLAUDE.md`)
+- "Where is REBUILD_PLAN.md?" → Repo's `Docs\` folder
+- "Where is this setup guide?" → Repo's `Docs\NEW_REPO_SETUP.md` (you're reading it)
+- "What's `settings.local.json`?" → Tiny config file in `<repo>\.claude\`. Ignore it.
+
+---
+
 ## Step 1 — Create the repo
 
 1. Create a new empty repo on GitHub.
@@ -110,15 +202,27 @@ That one prompt does everything. No memory file copying needed.
 
 ## Step 6 — Verify before you proceed
 
-After Claude Code responds to Step 5, check:
+After Claude Code responds to Step 5, open File Explorer and check each location:
 
-- [ ] Memory folder exists at `C:\Users\Reggie\.claude\projects\<new-repo-folder-name>\memory\`
-- [ ] `MEMORY.md` is in it
-- [ ] `user_workflow_stack.md` is in it
-- [ ] Claude confirmed it understands the blueprint
+**In the new repo folder:**
+- [ ] `CLAUDE.md` is at the root (from Step 3)
+- [ ] `Docs/REBUILD_PLAN.md` exists (from Step 2)
+- [ ] `Docs/REBUILD_PLAN_DEFERRED.md` exists (from Step 2)
+- [ ] `Docs/NEW_REPO_SETUP.md` exists (copied with Docs in Step 2)
+
+**In your user home** — paste this into File Explorer's address bar:
+```
+C:\Users\Reggie\.claude\projects\
+```
+Then open the folder matching your new repo name, then `memory\`. You should see:
+- [ ] `MEMORY.md`
+- [ ] `user_workflow_stack.md`
+
+**In Claude Code's response:**
+- [ ] Claude gave a short summary confirming it understood the blueprint
 - [ ] Claude did NOT start writing code yet
 
-If all four check out, you are ready.
+If every box is checked, you are ready for Step 7.
 
 ---
 
